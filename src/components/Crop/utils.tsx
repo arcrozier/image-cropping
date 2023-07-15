@@ -109,10 +109,14 @@ export function transformToFit(c: CropState, windowSize: Dimension): DOMMatrix {
     // we have to do animations manually
     // drawing has to be done after applying the transformation
     const matrix = new DOMMatrix()
-    matrix.rotateSelf(-c.angle) // rotate so crop angle is normalized
+    const scale = Math.min(windowSize.width / c.width, windowSize.height / c.height) * 0.9
+    const centerX = windowSize.width / 2
+    const centerY = windowSize.height / 2
+    matrix
         .translateSelf(-c.x, -c.y)  // translate so that the center of the crop is at the origin
-        .scaleSelf(Math.min(windowSize.width / c.width, windowSize.height / c.height) * 0.9) // scale so that c.width < windowSize.width and c.height < windowSize.height
-        .translateSelf(windowSize.width / 2, windowSize.height / 2)  // move the origin to the center of the screen
+        .rotateSelf(-c.angle) // rotate so crop angle is normalized
+        .translateSelf(centerX, centerY)  // move the origin to the center of the screen
+        .scaleSelf(scale, scale, 1, c.x, c.y) // scale so that c.width < windowSize.width and c.height < windowSize.height
 
     return matrix;
 }
@@ -301,7 +305,7 @@ export function resetCrop(image: Dimension, aspect: number | undefined): CropSta
     console.assert(aspect === undefined || (aspect > 0 && isFinite(aspect)))
     if (aspect == undefined) {
         // set the crop state to the full image
-        return {x: image.width / 2, y: -image.height / 2, angle: 0, width: image.width, height: image.height}
+        return {x: image.width / 2, y: image.height / 2, angle: 0, width: image.width, height: image.height}
     } else {
         let width: number
         let height: number

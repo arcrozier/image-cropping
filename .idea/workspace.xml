@@ -4,15 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7c795a6e-0097-4f1b-8735-12628dd2a5ec" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/components/Crop/Crop.stories.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Crop/mathExtension.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/components/Crop/utils.tsx" afterDir="false" />
+    <list default="true" id="7c795a6e-0097-4f1b-8735-12628dd2a5ec" name="Changes" comment="Wrote a lot of code for the crop and added storybook for testing, but no actual testing yet">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Crop/Crop.stories.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Crop/Crop.stories.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/Crop/Crop.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Crop/Crop.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Crop/utils.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Crop/utils.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,23 +34,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Aragorn/Programming/image-cropping&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;settings.typescriptcompiler&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\IntelliJ IDEA 2023.1.2\\plugins\\javascript-impl\\jsLanguageServicesImpl\\external&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/Aragorn/Programming/image-cropping/src/stories/assets",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "settings.typescriptcompiler",
+    "ts.external.directory.path": "C:\\Program Files\\JetBrains\\IntelliJ IDEA 2023.1.2\\plugins\\javascript-impl\\jsLanguageServicesImpl\\external",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Aragorn\Programming\image-cropping\src\stories\assets" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Aragorn\Programming\image-cropping" />
     </key>
@@ -85,8 +84,15 @@
       <workItem from="1688868223125" duration="31998000" />
       <workItem from="1689219632479" duration="260000" />
       <workItem from="1689219910429" duration="240000" />
-      <workItem from="1689220175886" duration="9283000" />
+      <workItem from="1689220175886" duration="16583000" />
     </task>
+    <task id="LOCAL−00001" summary="Wrote a lot of code for the crop and added storybook for testing, but no actual testing yet">
+      <created>1689312303094</created>
+      <option name="number" value="LOCAL−00001" />
+      <option name="presentableId" value="LOCAL−00001" />
+      <updated>1689312303094</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -102,6 +108,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Wrote a lot of code for the crop and added storybook for testing, but no actual testing yet" />
+    <option name="LAST_COMMIT_MESSAGE" value="Wrote a lot of code for the crop and added storybook for testing, but no actual testing yet" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

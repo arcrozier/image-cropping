@@ -51,7 +51,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
                 ctx.restore()
             }
         }
-    }, [canvasRef.current, canvasSize, cropState])
+    }, [canvasRef.current, canvasSize, cropState, image])
 
     useEffect(() => {
         if (canvasRef.current) {
@@ -81,7 +81,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const wrapperRef = useRef<HTMLDivElement | null>(null)
     return (<div ref={wrapperRef} style={{height: "100%", width: "100%", position: "relative", ...props.wrapperStyle}}>
-        <canvas ref={canvasRef} style={{height: "100%", width: "100%"}}></canvas>
+        <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasSize.height} width={canvasSize.width}></canvas>
     </div>)
 }
 
