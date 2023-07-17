@@ -1,7 +1,7 @@
-import React, {CSSProperties, MutableRefObject, RefObject, useEffect, useRef, useState} from 'react'
+import React, {CSSProperties, MutableRefObject, RefObject, useCallback, useEffect, useRef, useState} from 'react'
 import {CropState, Dimension, resetCrop, transformToFit} from "./utils";
-import {clamp, Point} from "./mathExtension";
-import { useDraggable } from '../utils/use-draggable';
+import {Point} from "./mathExtension";
+import useDraggable from '../useDraggable';
 
 export interface CropProps {
     src: string,
@@ -18,6 +18,11 @@ export interface CropProps {
     onCropChange?: (c: CropState) => void,
     canvasRef?: RefObject<HTMLCanvasElement>,
     thirds?: boolean
+}
+
+
+enum Corner {
+    TL, TR, BL, BR
 }
 
 
@@ -39,17 +44,61 @@ interface HandleProps {
      * Called when the user finishes moving the point (for mouse movements, this is the mouse up event, for keyboard
      * interactions, key up)
      */
-    commitPosition: () => void
+    commitPosition: () => void,
+    corner: Corner,
+    handleStyle?: CSSProperties
 }
+
+export const HANDLE_SIZE = '24px'
 
 
 const Handle = (props: HandleProps) => {
-    const onDrag = (newPos: Point) => {
-        // todo
-    }
-    const [ref, pressed] = useDraggable(props.position, onDrag)
 
-//    elem.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+    const onDrag = useCallback((delta: {x: number, y: number}) => {
+        props.setPosition({
+            x: props.position.x + delta.x,
+            y: props.position.y + delta.y
+        })
+    }, [props.setPosition, props.position])
+
+    const [ref, pressed] = useDraggable(onDrag, (pressed) => {
+        if (!pressed) {
+            props.commitPosition()
+        }
+    })
+
+    let cursor
+    let corner
+    switch (props.corner) {
+        case Corner.BL:
+            cursor = 'sw-resize'
+            corner = 'bottom left'
+            break
+        case Corner.BR:
+            cursor = 'se-resize'
+            corner = 'bottom right'
+            break
+        case Corner.TL:
+            cursor = 'nw-resize'
+            corner = 'top left'
+            break
+        case Corner.TR:
+            cursor = 'ne-resize'
+            corner = 'top right'
+    }
+    return (<div style={{
+        position: 'absolute',
+        top: props.position.y,
+        left: props.position.x,
+        backgroundColor: 'white',
+        height: HANDLE_SIZE,
+        width: HANDLE_SIZE,
+        borderRadius: '50%',
+        cursor: cursor,
+        zIndex: 2, ...props.handleStyle
+    }} ref={ref} role={'slider'} tabIndex={0} aria-label={`Handle for ${corner} corner of crop area`}>
+
+    </div>)
 }
 
 
@@ -113,9 +162,13 @@ const Crop = ({renderer, ...props}: CropProps) => {
         }
     }, [renderer])
 
+    const [testPos, setTestPos] = useState({x: 0, y: 0})
+
     const wrapperRef = useRef<HTMLDivElement | null>(null)
-    return (<div ref={wrapperRef} style={{height: "100%", width: "100%", position: "relative", ...props.wrapperStyle}}>
-        <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasSize.height} width={canvasSize.width}></canvas>
+    return (<div ref={wrapperRef} style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle}}>
+        <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasSize.height}
+                width={canvasSize.width}></canvas>
+        <Handle position={testPos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={Corner.TR} />
     </div>)
 }
 
