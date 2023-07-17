@@ -1,6 +1,7 @@
 import React, {CSSProperties, MutableRefObject, RefObject, useEffect, useRef, useState} from 'react'
 import {CropState, Dimension, resetCrop, transformToFit} from "./utils";
 import {clamp, Point} from "./mathExtension";
+import { useDraggable } from '../utils/use-draggable';
 
 export interface CropProps {
     src: string,
@@ -15,7 +16,40 @@ export interface CropProps {
     onScale?: (s: number) => void,
     cropState?: CropState,
     onCropChange?: (c: CropState) => void,
-    canvasRef?: RefObject<HTMLCanvasElement>
+    canvasRef?: RefObject<HTMLCanvasElement>,
+    thirds?: boolean
+}
+
+
+/**
+ * Props for corner of crop area
+ */
+interface HandleProps {
+    /**
+     * The position of the handle in canvas coordinates
+     */
+    position: Point,
+    /**
+     * Called each time the position changes
+     *
+     * @param p The new point, in canvas coordinates
+     */
+    setPosition: (p: Point) => void,
+    /**
+     * Called when the user finishes moving the point (for mouse movements, this is the mouse up event, for keyboard
+     * interactions, key up)
+     */
+    commitPosition: () => void
+}
+
+
+const Handle = (props: HandleProps) => {
+    const onDrag = (newPos: Point) => {
+        // todo
+    }
+    const [ref, pressed] = useDraggable(props.position, onDrag)
+
+//    elem.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
 }
 
 
