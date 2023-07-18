@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState } from "react";
+import {RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { throttle } from "./throttle";
 
 // By https://stackoverflow.com/users/1872046/polkovnikov-ph
@@ -9,29 +9,45 @@ import { throttle } from "./throttle";
 /**
  * How fast a keyboard-based drag should be
  */
-const dragSpeed = 10 // pixels per second
+const dragSpeed = 40 // pixels per second
 
 /**
  * Make an element draggable by passing the returned ref to the ref of the element
  *
- * @param pos       The current position of the element
  * @param onDrag    Called when the user drags the element
+ * @param onPressChange Called when the state of pressed changes
+ * @param relativeTo    If provided, positions provided to onDrag will be absolute positions relative to the provided
+ *                      element. Otherwise, positions provided to onDrag will be deltas
  *
  * @return  [ref, pressed]: ref should be passed to the element you want draggable. pressed is whether the user is currently dragging the element
  */
-const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressChange?: (pressed: boolean) => void): [(elem: HTMLElement | null) => void, boolean] => {
+const useDraggable = (onDrag: (newPos: {x: number, y: number}, delta: boolean) => void, onPressChange?: (pressed: boolean) => void, relativeTo?: RefObject<HTMLElement | null>): [(elem: HTMLElement | null) => void, boolean] => {
     // this state doesn't change often, so it's fine
     const [pressed, _setPressed] = useState(false);
-    const setPressed = (pressed: boolean) => {
-        _setPressed(pressed)
-        if (onPressChange) {
-            onPressChange(pressed)
+    const mouseOffset = useRef({x: 0, y: 0})
+    const setPressed = (pressed: boolean | ((prevState: boolean) => boolean)) => {
+        if (typeof pressed === 'function') {
+            _setPressed((prevState => {
+                const nextState = pressed(prevState)
+                if (onPressChange) {
+                    onPressChange(nextState)
+                }
+                return nextState
+            }))
         }
+        else {
+            _setPressed(pressed)
+            if (onPressChange) {
+                onPressChange(pressed)
+            }
+        }
+
     }
     const keys = useRef({left: false, right: false, up: false, down: false})
 
     const keyMoveLoop = (() => {
         let token: number | null = null
+        // todo when the user stops moving with keyboard, this doesn't get reset causing a large jump when they start moving again
         let last = -1
         const invoke = () => {
             if (!(keys.current.up || keys.current.down || keys.current.left || keys.current.right)) {
@@ -57,14 +73,16 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                 } else {
                     dirY = 0
                 }
-                onDrag({x: delta * dirX, y: delta * dirY})
+                onDrag({x: delta * dirX, y: delta * dirY}, true)
             }
 
             last = performance.now()
 
             token = requestAnimationFrame(invoke)
         }
-        invoke.cancel = () => token && cancelAnimationFrame(token)
+        invoke.cancel = () => {token && cancelAnimationFrame(token)
+        last = -1
+        }
 
         return invoke
     })()
@@ -96,6 +114,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                 e.target.style.userSelect = "none";
             }
 
+            mouseOffset.current = {x: e.offsetX, y: e.offsetY}
             setPressed(true);
         };
 
@@ -117,8 +136,12 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                     keys.current.down = true
                     break
             }
-            setPressed(true)
-            keyMoveLoop()
+            setPressed((prevState) => {
+                if (!prevState) {
+                    keyMoveLoop()
+                }
+                return true
+            })
         }
         elem.addEventListener("mousedown", handleMouseDown);
         elem.addEventListener("keydown", handleKeyPress)
@@ -141,12 +164,6 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
         // lag 1 frame behind cursor, and it will appear to be lagging
         // even at 60 FPS
         const handleMouseMove = (event: MouseEvent) => {
-            // it's important to save it into variable here,
-            // otherwise we might capture reference to an element
-            // that was long gone. not really sure what's correct
-            // behavior for a case when you've been scrolling, and
-            // the target element was replaced. probably some formulae
-            // needed to handle that case. TODO
 
             // todo this needs to be a delta because:
             //      if we try to do an absolute position, we get the offset relative to the handel (and we need to adjust by the offset when the user does a mouse down)
@@ -154,10 +171,21 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
             //                  but then we need a ref to the canvas
             //      other problem is, this will remove and re-add the listener every single time the mouse moves because the position changes which means onDrag changes
             // does passing in a "relative to" prop make sense?
-            onDrag({
-                x: event.movementX,
-                y: event.movementY
-            });
+            let newPos: {x: number, y: number}
+            if (relativeTo) {
+                const rect = relativeTo.current?.getBoundingClientRect() ?? {x: 0, y: 0}
+                newPos = {
+                    x: event.clientX - rect.x - mouseOffset.current.x,
+                    y: event.clientY - rect.y - mouseOffset.current.y
+                }
+            } else {
+                newPos = {
+                    x: event.movementX,
+                    y: event.movementY
+                }
+            }
+            // todo instead of this awful "delta" parameter, we could cache movements and commit them on animation frames
+            onDrag(newPos, !Boolean(relativeTo));
         };
         const handleMouseUp = (e: MouseEvent) => {
             if (e.target && e.target instanceof HTMLElement) {
@@ -166,6 +194,8 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
             console.log("mouse up")
             setPressed(false);
         };
+
+        const mouseMoveListener = relativeTo ? throttle(handleMouseMove) : handleMouseMove
 
         const handleKeyUp = (e: KeyboardEvent) => {
             if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
@@ -194,14 +224,14 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
         // subscribe to mousemove and mouseup on document, otherwise you
         // can escape bounds of element while dragging and get stuck
         // dragging it forever
-        document.addEventListener("mousemove", handleMouseMove);
+        document.addEventListener("mousemove", mouseMoveListener);
         document.addEventListener("mouseup", handleMouseUp);
         document.addEventListener('keyup', handleKeyUp)
         return () => {
             //handleMouseMove.cancel();
             console.log("cleaning up")
             keyMoveLoop.cancel()
-            document.removeEventListener("mousemove", handleMouseMove);
+            document.removeEventListener("mousemove", mouseMoveListener);
             document.removeEventListener("mouseup", handleMouseUp);
             document.removeEventListener('keyup', handleKeyUp)
         };

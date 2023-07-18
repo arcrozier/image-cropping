@@ -1,7 +1,7 @@
 import React, {CSSProperties, MutableRefObject, RefObject, useCallback, useEffect, useRef, useState} from 'react'
 import {CropState, Dimension, resetCrop, transformToFit} from "./utils";
 import {Point} from "./mathExtension";
-import useDraggable from '../useDraggable';
+import useDraggable, {throttle} from '../useDraggable';
 
 export interface CropProps {
     src: string,
@@ -39,14 +39,15 @@ interface HandleProps {
      *
      * @param p The new point, in canvas coordinates
      */
-    setPosition: (p: Point) => void,
+    setPosition:  React.Dispatch<React.SetStateAction<Point>>,
     /**
      * Called when the user finishes moving the point (for mouse movements, this is the mouse up event, for keyboard
      * interactions, key up)
      */
     commitPosition: () => void,
     corner: Corner,
-    handleStyle?: CSSProperties
+    handleStyle?: CSSProperties,
+    relativeTo: RefObject<HTMLElement>
 }
 
 export const HANDLE_SIZE = '24px'
@@ -54,18 +55,21 @@ export const HANDLE_SIZE = '24px'
 
 const Handle = (props: HandleProps) => {
 
-    const onDrag = useCallback((delta: {x: number, y: number}) => {
-        props.setPosition({
-            x: props.position.x + delta.x,
-            y: props.position.y + delta.y
-        })
-    }, [props.setPosition, props.position])
+    const [ref, pressed] = useDraggable((newPos, delta) => {
+        if (delta) {
+            // todo this branch causes a new onDrag to be created each time the keyboard is updated
+            props.setPosition((p) => {
+                return {x: p.x + newPos.x, y: p.y + newPos.y}
+            })
+        } else {
 
-    const [ref, pressed] = useDraggable(onDrag, (pressed) => {
+            props.setPosition(newPos)
+        }
+    }, (pressed) => {
         if (!pressed) {
             props.commitPosition()
         }
-    })
+    }, props.relativeTo)
 
     let cursor
     let corner
@@ -138,6 +142,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     useEffect(() => {
         if (canvasRef.current) {
+            // todo we need to listen for window size changes see https://stackoverflow.com/questions/68175873/detect-element-reference-height-change
             setCanvasSize({width: canvasRef.current.offsetWidth, height: canvasRef.current.offsetHeight})
         }
     }, [canvasRef.current, canvasRef.current?.offsetWidth, canvasRef.current?.offsetHeight])
@@ -168,7 +173,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
     return (<div ref={wrapperRef} style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle}}>
         <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasSize.height}
                 width={canvasSize.width}></canvas>
-        <Handle position={testPos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={Corner.TR} />
+        <Handle position={testPos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={Corner.TR} relativeTo={canvasRef}/>
     </div>)
 }
 

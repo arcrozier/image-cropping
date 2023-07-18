@@ -4,27 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7c795a6e-0097-4f1b-8735-12628dd2a5ec" name="Changes" comment="Began planning for handle elements">
-      <change afterPath="$PROJECT_DIR$/src/components/useDraggable/index.ts" afterDir="false" />
+    <list default="true" id="9c3161ac-5810-4b2d-82f0-23c45f78f420" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/Crop/Crop.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Crop/Crop.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/utils/throttle.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/useDraggable/throttle.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/utils/use-draggable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/useDraggable/use-draggable.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/useDraggable/use-draggable.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/useDraggable/use-draggable.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
-  </component>
-  <component name="FileTemplateManagerImpl">
-    <option name="RECENT_TEMPLATES">
-      <list>
-        <option value="JavaScript File" />
-        <option value="TypeScript JSX File" />
-        <option value="TypeScript File" />
-      </list>
-    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -32,113 +21,39 @@
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectId" id="2SJcecTXCoczmb3XZED8W9KJMuI" />
+  <component name="ProjectId" id="2SjGoDIXmGcQ728klBcz5FG4N4f" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/Aragorn/Programming/image-cropping/src/stories/assets",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "settings.typescriptcompiler",
     "ts.external.directory.path": "C:\\Program Files\\JetBrains\\IntelliJ IDEA 2023.1.2\\plugins\\javascript-impl\\jsLanguageServicesImpl\\external",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\Aragorn\Programming\image-cropping\src\stories\assets" />
-    </key>
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\Aragorn\Programming\image-cropping" />
-    </key>
-  </component>
-  <component name="RunManager">
-    <configuration default="true" type="JetRunConfigurationType">
-      <module name="image-cropping" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <module name="image-cropping" />
-      <option name="filePath" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="7c795a6e-0097-4f1b-8735-12628dd2a5ec" name="Changes" comment="" />
-      <created>1688868220715</created>
+      <changelist id="9c3161ac-5810-4b2d-82f0-23c45f78f420" name="Changes" comment="" />
+      <created>1689652756041</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1688868220715</updated>
-      <workItem from="1688868223125" duration="31998000" />
-      <workItem from="1689219632479" duration="260000" />
-      <workItem from="1689219910429" duration="240000" />
-      <workItem from="1689220175886" duration="37351000" />
+      <updated>1689652756041</updated>
+      <workItem from="1689652757107" duration="376000" />
     </task>
-    <task id="LOCAL−00001" summary="Wrote a lot of code for the crop and added storybook for testing, but no actual testing yet">
-      <created>1689312303094</created>
-      <option name="number" value="LOCAL−00001" />
-      <option name="presentableId" value="LOCAL−00001" />
-      <updated>1689312303094</updated>
-    </task>
-    <task id="LOCAL−00002" summary="Initial fitting of crop works">
-      <created>1689397978682</created>
-      <option name="number" value="LOCAL−00002" />
-      <option name="presentableId" value="LOCAL−00002" />
-      <updated>1689397978682</updated>
-    </task>
-    <task id="LOCAL−00003" summary="Added draggable hook">
-      <created>1689552937909</created>
-      <option name="number" value="LOCAL−00003" />
-      <option name="presentableId" value="LOCAL−00003" />
-      <updated>1689552937910</updated>
-    </task>
-    <task id="LOCAL−00004" summary="Began planning for handle elements">
-      <created>1689552975371</created>
-      <option name="number" value="LOCAL−00004" />
-      <option name="presentableId" value="LOCAL−00004" />
-      <updated>1689552975371</updated>
-    </task>
-    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
-  </component>
-  <component name="Vcs.Log.Tabs.Properties">
-    <option name="TAB_STATES">
-      <map>
-        <entry key="MAIN">
-          <value>
-            <State />
-          </value>
-        </entry>
-      </map>
-    </option>
-  </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="Wrote a lot of code for the crop and added storybook for testing, but no actual testing yet" />
-    <MESSAGE value="Initial fitting of crop works" />
-    <MESSAGE value="Added draggable hook" />
-    <MESSAGE value="Began planning for handle elements" />
-    <option name="LAST_COMMIT_MESSAGE" value="Began planning for handle elements" />
-  </component>
-  <component name="XSLT-Support.FileAssociations.UIState">
-    <expand />
-    <select />
   </component>
 </project>

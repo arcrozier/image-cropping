@@ -1,5 +1,6 @@
 import {clamp, identity, maxMagnitude, midpoint, Point, sign, signsMatch} from "./mathExtension";
 
+const MIN_CROP = 10
 
 export enum Transformations {
     TRANSLATE, SCALE, ROTATE
@@ -168,11 +169,16 @@ export function shiftRequired(p: Point, image: Dimension): { dx: number, dy: num
  *
  * @param p The point to fit
  * @param o The opposite corner of p. May also be moved
+ * @param oldCenter The previous center of the crop
  * @param image The image to fit the point(s) within
  * @param aspect The aspect ratio. May be undefined for free aspect ratio
  * @param angle The angle of the crop rectangle in radians
  */
-export function fitPoint(p: Point, o: Point, image: Dimension, aspect: number | undefined, angle: number): CropState {
+export function fitPoint(p: Point, o: Point, oldCenter: Point, image: Dimension, aspect: number | undefined, angle: number): CropState {
+    // todo: prevent crop from becoming 0 or 1 dimensional (or negative)
+    //      If aspect is unconstrained, we just need to ensure that each dimension maintains MIN_CROP size, where pPrime is on the same side of o as oldCenter
+    //      Else, we need to compute the sign of t for oldCenter, then constrain t for pPrime to have the same sign and be greater in magnitude than MIN_CROP
+    //      In either case, if the constraint would put that point outside the image, o must be shifted in addition
     // handles case where both points are off the same side of the image
     // this should never actually happen, but we want to avoid a situation where the crop rectangle becomes 1 or 0 dimensional
     const pShift = shiftRequired(p, image)
@@ -192,10 +198,11 @@ export function fitPoint(p: Point, o: Point, image: Dimension, aspect: number | 
     if (aspect === undefined) {
         pPrime = nearestPointInBounds(p, image)
     } else {
-        // todo
         // we will define a line that intersects o with the same slope as the aspect ratio after rotating
         // we define a vector that represents the aspect ratio and then rotate it by the angle
-        const slope = identity.rotate(angle).transformPoint({x: aspect, y: 1})
+        const slopeMagnitude = Math.sqrt(aspect * aspect + 1)
+        // slope is a unit vector
+        const slope = identity.rotate(angle).transformPoint({x: aspect / slopeMagnitude, y: 1 / slopeMagnitude})
 
         // lower and upper are the domain of valid inputs to the parametric equation that defines where this point can be
         const lower = Math.max(-o.x / slope.x, -o.y / slope.y)
@@ -243,19 +250,19 @@ export function fitCrop(c: CropState, image: Dimension, aspect: number | undefin
             // the user has tried to pull one or more control points outside the image bounds
             // move anchor coordinate and/or dimension to fit
             if (!isWithin(points.a, image)) {
-                cPrime = fitPoint(points.a, points.c, image, aspect, c.angle)
+                cPrime = fitPoint(points.a, points.c, cPrime, image, aspect, c.angle)
                 points = getCorners(cPrime)
             }
             if (!isWithin(points.b, image)) {
-                cPrime = fitPoint(points.b, points.d, image, aspect, c.angle)
+                cPrime = fitPoint(points.b, points.d, cPrime, image, aspect, c.angle)
                 points = getCorners(cPrime)
             }
             if (!isWithin(points.c, image)) {
-                cPrime = fitPoint(points.c, points.a, image, aspect, c.angle)
+                cPrime = fitPoint(points.c, points.a, cPrime, image, aspect, c.angle)
                 points = getCorners(cPrime)
             }
             if (!isWithin(points.d, image)) {
-                cPrime = fitPoint(points.d, points.b, image, aspect, c.angle)
+                cPrime = fitPoint(points.d, points.b, cPrime, image, aspect, c.angle)
             }
             break
         case Transformations.TRANSLATE:
