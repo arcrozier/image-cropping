@@ -1,5 +1,4 @@
-import {RefObject, useCallback, useEffect, useRef, useState } from "react";
-import { throttle } from "./throttle";
+import {useCallback, useEffect, useRef, useState } from "react";
 
 // By https://stackoverflow.com/users/1872046/polkovnikov-ph
 // from https://stackoverflow.com/a/39192992/7484693
@@ -9,19 +8,18 @@ import { throttle } from "./throttle";
 /**
  * How fast a keyboard-based drag should be
  */
-const dragSpeed = 40 // pixels per second
+const dragSpeed = 100 // pixels per second
 
 /**
  * Make an element draggable by passing the returned ref to the ref of the element
  *
  * @param onDrag    Called when the user drags the element
  * @param onPressChange Called when the state of pressed changes
- * @param relativeTo    If provided, positions provided to onDrag will be absolute positions relative to the provided
  *                      element. Otherwise, positions provided to onDrag will be deltas
  *
  * @return  [ref, pressed]: ref should be passed to the element you want draggable. pressed is whether the user is currently dragging the element
  */
-const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressChange?: (pressed: boolean) => void, relativeTo?: RefObject<HTMLElement | null>): [(elem: HTMLElement | null) => void, boolean] => {
+const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressChange?: (pressed: boolean) => void): (elem: HTMLElement | null) => void => {
     // this state doesn't change often, so it's fine
     const [pressed, _setPressed] = useState(false);
     const mouseOffset = useRef({x: 0, y: 0})
@@ -44,18 +42,18 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
 
     }
     const keys = useRef({left: false, right: false, up: false, down: false})
+    const last = useRef(-1)
 
     const keyMoveLoop = (() => {
         let token: number | null = null
-        // todo when the user stops moving with keyboard, this doesn't get reset causing a large jump when they start moving again
-        let last = -1
+
         const invoke = () => {
             if (!(keys.current.up || keys.current.down || keys.current.left || keys.current.right)) {
                 return
             }
 
-            if (last !== -1) {
-                const delta = (performance.now() - last) / 1000  // time delta
+            if (last.current >= 0) {
+                const delta = (performance.now() - last.current) / 1000  // time delta
                 let dirX
                 let dirY
                 if (keys.current.left && !keys.current.right) {
@@ -76,12 +74,12 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                 onDrag({x: delta * dirX, y: delta * dirY})
             }
 
-            last = performance.now()
+            last.current = performance.now()
 
             token = requestAnimationFrame(invoke)
         }
         invoke.cancel = () => {token && cancelAnimationFrame(token)
-        last = -1
+        last.current = -1
         }
 
         return invoke
@@ -212,8 +210,6 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
         document.addEventListener("mouseup", handleMouseUp);
         document.addEventListener('keyup', handleKeyUp)
         return () => {
-            //handleMouseMove.cancel();
-            console.log("cleaning up")
             keyMoveLoop.cancel()
             shouldRequest && cancelAnimationFrame(shouldRequest)
             document.removeEventListener("mousemove", handleMouseMove);
@@ -228,7 +224,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
     // actually it makes sense to return an array only when
     // you expect that on the caller side all of the fields
     // will be usually renamed
-    return [legacyRef, pressed];
+    return legacyRef;
 
 };
 

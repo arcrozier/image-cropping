@@ -55,10 +55,9 @@ export const HANDLE_SIZE = '24px'
 
 const Handle = (props: HandleProps) => {
 
-    const posRef = useRef({x: 0, y: 0})
-
-    const [ref] = useDraggable((delta) => {
-        // todo this branch causes a new onDrag to be created each time the keyboard is updated
+    const ref = useDraggable((delta) => {
+        // this branch causes a new onDrag to be created each time the keyboard is updated
+        // not great, but also not really a priority
         props.setPosition((p) => {
             return {x: p.x + delta.x, y: p.y + delta.y}
         })
@@ -66,7 +65,7 @@ const Handle = (props: HandleProps) => {
         if (!pressed) {
             props.commitPosition()
         }
-    }, props.relativeTo)
+    })
 
     let cursor
     let corner
