@@ -1,7 +1,7 @@
-import React, {CSSProperties, MutableRefObject, RefObject, useCallback, useEffect, useRef, useState} from 'react'
+import React, {CSSProperties, MutableRefObject, RefObject, useEffect, useRef, useState} from 'react'
 import {CropState, Dimension, resetCrop, transformToFit} from "./utils";
 import {Point} from "./mathExtension";
-import useDraggable, {throttle} from '../useDraggable';
+import useDraggable from '../useDraggable';
 
 export interface CropProps {
     src: string,
@@ -39,7 +39,7 @@ interface HandleProps {
      *
      * @param p The new point, in canvas coordinates
      */
-    setPosition:  React.Dispatch<React.SetStateAction<Point>>,
+    setPosition: React.Dispatch<React.SetStateAction<Point>>,
     /**
      * Called when the user finishes moving the point (for mouse movements, this is the mouse up event, for keyboard
      * interactions, key up)
@@ -55,16 +55,13 @@ export const HANDLE_SIZE = '24px'
 
 const Handle = (props: HandleProps) => {
 
-    const [ref, pressed] = useDraggable((newPos, delta) => {
-        if (delta) {
-            // todo this branch causes a new onDrag to be created each time the keyboard is updated
-            props.setPosition((p) => {
-                return {x: p.x + newPos.x, y: p.y + newPos.y}
-            })
-        } else {
+    const posRef = useRef({x: 0, y: 0})
 
-            props.setPosition(newPos)
-        }
+    const [ref] = useDraggable((delta) => {
+        // todo this branch causes a new onDrag to be created each time the keyboard is updated
+        props.setPosition((p) => {
+            return {x: p.x + delta.x, y: p.y + delta.y}
+        })
     }, (pressed) => {
         if (!pressed) {
             props.commitPosition()
@@ -94,7 +91,7 @@ const Handle = (props: HandleProps) => {
         position: 'absolute',
         top: props.position.y,
         left: props.position.x,
-        backgroundColor: 'white',
+        backgroundColor: 'red',
         height: HANDLE_SIZE,
         width: HANDLE_SIZE,
         borderRadius: '50%',
@@ -118,7 +115,6 @@ const Crop = ({renderer, ...props}: CropProps) => {
     // when the user increases the crop area, we should immediately recompute and scale the canvas if necessary (and
     // compute fit)
 
-    // todo are canvas pixels equal to screen pixels? - yes, as long as no CSS styles are applied
     // need to set canvas height/width to computed height and width of parent
     // then, positions relative to the canvas are the same as positions relative to the screen
 
@@ -170,10 +166,12 @@ const Crop = ({renderer, ...props}: CropProps) => {
     const [testPos, setTestPos] = useState({x: 0, y: 0})
 
     const wrapperRef = useRef<HTMLDivElement | null>(null)
-    return (<div ref={wrapperRef} style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle}}>
+    return (<div ref={wrapperRef}
+                 style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle}}>
         <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasSize.height}
                 width={canvasSize.width}></canvas>
-        <Handle position={testPos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={Corner.TR} relativeTo={canvasRef}/>
+        <Handle position={testPos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={Corner.TR}
+                relativeTo={canvasRef}/>
     </div>)
 }
 
