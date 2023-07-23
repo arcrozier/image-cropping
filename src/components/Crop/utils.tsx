@@ -10,8 +10,8 @@ export enum Transformations {
  * The current state of the canvas
  */
 export interface CanvasState {
-    transform: DOMMatrix,
-    screen: Dimension,
+    transform: DOMMatrixReadOnly,
+    canvas: Dimension,  // the dimension of the canvas in CSS pixels
     image: Dimension  // this should be saved when the image gets loaded in
 }
 
@@ -61,10 +61,10 @@ function isWithin(p: Point, d: Dimension): boolean {
  */
 export function getCorners(crop: CropState): { a: Point, b: Point, c: Point, d: Point } {
     const rot = identity.rotate(crop.angle).translate(crop.x, crop.y)
-    const a = rot.transformPoint({x: -crop.width / 2, y: crop.height / 2})
-    const b = rot.transformPoint({x: crop.width / 2, y: crop.height / 2})
-    const c = rot.transformPoint({x: crop.width / 2, y: -crop.height / 2})
-    const d: Point = rot.transformPoint({x: -crop.width / 2, y: -crop.height / 2})
+    const a = rot.transformPoint({x: -crop.width / 2, y: -crop.height / 2, z: 0, w: 1})
+    const b = rot.transformPoint({x: crop.width / 2, y: -crop.height / 2})
+    const c = rot.transformPoint({x: crop.width / 2, y: crop.height / 2})
+    const d: Point = rot.transformPoint(new DOMPoint(-crop.width / 2,crop.height / 2))
     return {
         a: a,
         b: b,
@@ -129,7 +129,7 @@ export function transformToFit(c: CropState, windowSize: Dimension): DOMMatrix {
  * @param canvasState   the canvas the point is projected to
  */
 export function canvasToImage(p: Point, canvasState: CanvasState): Point {
-    return canvasState.transform.transformPoint(p)
+    return canvasState.transform.inverse().transformPoint(p)
 }
 
 /**
@@ -139,7 +139,7 @@ export function canvasToImage(p: Point, canvasState: CanvasState): Point {
  * @param canvasState   the canvas the point is projected from
  */
 export function imageToCanvas(p: Point, canvasState: CanvasState): Point {
-    return canvasState.transform.inverse().transformPoint(p)
+    return canvasState.transform.transformPoint(p)
 }
 
 
@@ -175,10 +175,6 @@ export function shiftRequired(p: Point, image: Dimension): { dx: number, dy: num
  * @param angle The angle of the crop rectangle in radians
  */
 export function fitPoint(p: Point, o: Point, oldCenter: Point, image: Dimension, aspect: number | undefined, angle: number): CropState {
-    // todo: prevent crop from becoming 0 or 1 dimensional (or negative)
-    //      If aspect is unconstrained, we just need to ensure that each dimension maintains MIN_CROP size, where pPrime is on the same side of o as oldCenter
-    //      Else, we need to compute the sign of t for oldCenter, then constrain t for pPrime to have the same sign and be greater in magnitude than MIN_CROP
-    //      In either case, if the constraint would put that point outside the image, o must be shifted in addition
     // handles case where both points are off the same side of the image
     // this should never actually happen, but we want to avoid a situation where the crop rectangle becomes 1 or 0 dimensional
     const pShift = shiftRequired(p, image)

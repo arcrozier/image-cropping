@@ -1,6 +1,6 @@
-import React, {CSSProperties, MutableRefObject, RefObject, useEffect, useRef, useState} from 'react'
-import {CropState, Dimension, resetCrop, transformToFit} from "./utils";
-import {Point} from "./mathExtension";
+import React, {CSSProperties, MutableRefObject, ReactElement, RefObject, useEffect, useRef, useState} from 'react'
+import {CanvasState, CropState, Dimension, getCorners, imageToCanvas, resetCrop, transformToFit} from "./utils";
+import {identity, Point} from "./mathExtension";
 import useDraggable from '../useDraggable';
 
 export interface CropProps {
@@ -47,10 +47,9 @@ interface HandleProps {
     commitPosition: () => void,
     corner: Corner,
     handleStyle?: CSSProperties,
-    relativeTo: RefObject<HTMLElement>
 }
 
-export const HANDLE_SIZE = '24px'
+export const HANDLE_SIZE = 24
 
 
 const Handle = (props: HandleProps) => {
@@ -88,11 +87,11 @@ const Handle = (props: HandleProps) => {
     }
     return (<div style={{
         position: 'absolute',
-        top: props.position.y,
-        left: props.position.x,
+        top: props.position.y - HANDLE_SIZE / 2,
+        left: props.position.x - HANDLE_SIZE / 2,
         backgroundColor: 'red',
-        height: HANDLE_SIZE,
-        width: HANDLE_SIZE,
+        height: `${HANDLE_SIZE}px`,
+        width: `${HANDLE_SIZE}px`,
         borderRadius: '50%',
         cursor: cursor,
         zIndex: 2, ...props.handleStyle
@@ -117,28 +116,43 @@ const Crop = ({renderer, ...props}: CropProps) => {
     // need to set canvas height/width to computed height and width of parent
     // then, positions relative to the canvas are the same as positions relative to the screen
 
+    const corners = useRef<{a: Point, b: Point, c: Point, d: Point}>()
+
     const [cropState, setCropState] = useState<CropState>(resetCrop({width: 0, height: 0}, props.aspect))
-    const [canvasSize, setCanvasSize] = useState<Dimension>({width: 0, height: 0})
+    const [canvasState, setCanvasState] = useState<CanvasState>({transform: identity, image: {width: 0, height: 0}, canvas: {width: 0, height: 0}})
     const [image, setImage] = useState<HTMLImageElement | null>(null)
 
     const canvasRef = props.canvasRef ? props.canvasRef : useRef<HTMLCanvasElement | null>(null)
 
     useEffect(() => {
+        setCanvasState((c) => {
+            return {...c, transform: transformToFit(cropState, c.canvas)}
+        })
+        console.log("recomputing transformation")
+    }, [cropState, canvasState.canvas])
+
+
+    useEffect(() => {
         if (canvasRef.current) {
             const ctx = canvasRef.current.getContext("2d")
             if (ctx && image) {
+                console.log(canvasState.transform)
                 ctx.save()
-                ctx.setTransform(transformToFit(cropState, canvasSize))
+                ctx.clearRect(0, 0, canvasState.canvas.width, canvasState.canvas.height)
+                ctx.setTransform(canvasState.transform)
                 ctx.drawImage(image, 0, 0)
                 ctx.restore()
             }
         }
-    }, [canvasRef.current, canvasSize, cropState, image])
+    }, [canvasRef.current, canvasState.transform, image])
 
     useEffect(() => {
         if (canvasRef.current) {
+            const temp = canvasRef.current
             // todo we need to listen for window size changes see https://stackoverflow.com/questions/68175873/detect-element-reference-height-change
-            setCanvasSize({width: canvasRef.current.offsetWidth, height: canvasRef.current.offsetHeight})
+            setCanvasState((c) => {
+                return {...c, canvas: {width: temp.offsetWidth, height: temp.offsetHeight}}
+            })
         }
     }, [canvasRef.current, canvasRef.current?.offsetWidth, canvasRef.current?.offsetHeight])
 
@@ -162,15 +176,27 @@ const Crop = ({renderer, ...props}: CropProps) => {
         }
     }, [renderer])
 
+    useEffect(() => {
+        corners.current = getCorners(cropState)
+    }, [cropState])
+
     const [testPos, setTestPos] = useState({x: 0, y: 0})
+
+    const handles: ReactElement[] = []
+    if (corners.current) {
+        for (let {pos, corner} of [{pos: corners.current.a, corner: Corner.TL}, {pos: corners.current.b, corner: Corner.TR}, {pos: corners.current.c, corner: Corner.BR}, {pos: corners.current.d, corner: Corner.BL}]) {
+            handles.push(<Handle position={imageToCanvas(pos, canvasState)} setPosition={setTestPos} commitPosition={() => 'cool'} corner={corner}/>)
+        }
+
+    }
 
     const wrapperRef = useRef<HTMLDivElement | null>(null)
     return (<div ref={wrapperRef}
                  style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle}}>
-        <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasSize.height}
-                width={canvasSize.width}></canvas>
-        <Handle position={testPos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={Corner.TR}
-                relativeTo={canvasRef}/>
+        <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasState.canvas.height}
+                width={canvasState.canvas.width}></canvas>
+        {handles}
+
     </div>)
 }
 
