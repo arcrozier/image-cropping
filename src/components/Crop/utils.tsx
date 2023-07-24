@@ -64,12 +64,23 @@ export function getCorners(crop: CropState): { a: Point, b: Point, c: Point, d: 
     const a = rot.transformPoint({x: -crop.width / 2, y: -crop.height / 2, z: 0, w: 1})
     const b = rot.transformPoint({x: crop.width / 2, y: -crop.height / 2})
     const c = rot.transformPoint({x: crop.width / 2, y: crop.height / 2})
-    const d: Point = rot.transformPoint(new DOMPoint(-crop.width / 2,crop.height / 2))
+    const d = rot.transformPoint({x: -crop.width / 2, y: crop.height / 2})
     return {
         a: a,
         b: b,
         c: c,
         d: d
+    }
+}
+
+
+export function getCanvasCorners(crop: CropState, transform: DOMMatrixReadOnly) {
+    const corners = getCorners(crop)
+    return {
+        a: imageToCanvas(corners.a, transform),
+        b: imageToCanvas(corners.b, transform),
+        c: imageToCanvas(corners.c, transform),
+        d: imageToCanvas(corners.d, transform)
     }
 }
 
@@ -136,10 +147,10 @@ export function canvasToImage(p: Point, canvasState: CanvasState): Point {
  * Converts coordinates from the image's coordinate system to the screen
  *
  * @param p             the point to project
- * @param canvasState   the canvas the point is projected from
+ * @param transform     the canvas transformation is projected from
  */
-export function imageToCanvas(p: Point, canvasState: CanvasState): Point {
-    return canvasState.transform.transformPoint(p)
+export function imageToCanvas(p: Point, transform: DOMMatrixReadOnly): Point {
+    return transform.transformPoint(p)
 }
 
 

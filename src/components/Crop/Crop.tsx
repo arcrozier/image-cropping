@@ -1,5 +1,14 @@
 import React, {CSSProperties, MutableRefObject, ReactElement, RefObject, useEffect, useRef, useState} from 'react'
-import {CanvasState, CropState, Dimension, getCorners, imageToCanvas, resetCrop, transformToFit} from "./utils";
+import {
+    CanvasState,
+    CropState,
+    Dimension,
+    getCanvasCorners,
+    getCorners,
+    imageToCanvas,
+    resetCrop,
+    transformToFit
+} from "./utils";
 import {identity, Point} from "./mathExtension";
 import useDraggable from '../useDraggable';
 
@@ -17,7 +26,8 @@ export interface CropProps {
     cropState?: CropState,
     onCropChange?: (c: CropState) => void,
     canvasRef?: RefObject<HTMLCanvasElement>,
-    thirds?: boolean
+    thirds?: boolean,
+    borderRadius?: string
 }
 
 
@@ -49,7 +59,7 @@ interface HandleProps {
     handleStyle?: CSSProperties,
 }
 
-export const HANDLE_SIZE = 24
+export const HANDLE_SIZE = 48
 
 
 const Handle = (props: HandleProps) => {
@@ -89,14 +99,21 @@ const Handle = (props: HandleProps) => {
         position: 'absolute',
         top: props.position.y - HANDLE_SIZE / 2,
         left: props.position.x - HANDLE_SIZE / 2,
-        backgroundColor: 'red',
+        backgroundColor: 'green',
         height: `${HANDLE_SIZE}px`,
         width: `${HANDLE_SIZE}px`,
-        borderRadius: '50%',
         cursor: cursor,
-        zIndex: 2, ...props.handleStyle
+        zIndex: 2,
+        borderRadius: '50%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
     }} ref={ref} role={'slider'} tabIndex={0} aria-label={`Handle for ${corner} corner of crop area`}>
+        <div style={{
+            borderRadius: '50%', backgroundColor: 'red', width: `25%`, height: `25%`, zIndex: 3,
+            ...props.handleStyle}}>
 
+        </div>
     </div>)
 }
 
@@ -116,7 +133,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
     // need to set canvas height/width to computed height and width of parent
     // then, positions relative to the canvas are the same as positions relative to the screen
 
-    const corners = useRef<{a: Point, b: Point, c: Point, d: Point}>()
+    const [corners, setCorners] = useState<{a: Point, b: Point, c: Point, d: Point}>()
 
     const [cropState, setCropState] = useState<CropState>(resetCrop({width: 0, height: 0}, props.aspect))
     const [canvasState, setCanvasState] = useState<CanvasState>({transform: identity, image: {width: 0, height: 0}, canvas: {width: 0, height: 0}})
@@ -177,17 +194,19 @@ const Crop = ({renderer, ...props}: CropProps) => {
     }, [renderer])
 
     useEffect(() => {
-        corners.current = getCorners(cropState)
-    }, [cropState])
+        setCorners(getCanvasCorners(cropState, canvasState.transform))
+        //corners.current = getCorners(cropState)
+    }, [cropState, canvasState.transform])
 
     const [testPos, setTestPos] = useState({x: 0, y: 0})
 
     const handles: ReactElement[] = []
-    if (corners.current) {
-        for (let {pos, corner} of [{pos: corners.current.a, corner: Corner.TL}, {pos: corners.current.b, corner: Corner.TR}, {pos: corners.current.c, corner: Corner.BR}, {pos: corners.current.d, corner: Corner.BL}]) {
-            handles.push(<Handle position={imageToCanvas(pos, canvasState)} setPosition={setTestPos} commitPosition={() => 'cool'} corner={corner}/>)
+    if (corners) {
+        for (let {pos, corner} of [{pos: corners.a, corner: Corner.TL}, {pos: corners.b, corner: Corner.TR}, {pos: corners.c, corner: Corner.BR}, {pos: corners.d, corner: Corner.BL}]) {
+            handles.push(<Handle position={pos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={corner}/>)
         }
-
+        handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), borderRadius: props.borderRadius ?? '50%', boxShadow: '0 0 0 999999px rgba(0, 0, 0, 0.7)'}}></div>)
+        handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: '1px', borderColor: 'white'}}></div>)
     }
 
     const wrapperRef = useRef<HTMLDivElement | null>(null)
