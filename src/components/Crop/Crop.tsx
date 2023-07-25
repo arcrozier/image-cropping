@@ -153,9 +153,10 @@ const Crop = ({renderer, ...props}: CropProps) => {
         if (canvasRef.current) {
             const ctx = canvasRef.current.getContext("2d")
             if (ctx && image) {
-                console.log(canvasState.transform)
                 ctx.save()
                 ctx.clearRect(0, 0, canvasState.canvas.width, canvasState.canvas.height)
+                ctx.fillStyle = 'black'
+                ctx.fillRect(0, 0, canvasState.canvas.width, canvasState.canvas.height)
                 ctx.setTransform(canvasState.transform)
                 ctx.drawImage(image, 0, 0)
                 ctx.restore()
@@ -166,10 +167,14 @@ const Crop = ({renderer, ...props}: CropProps) => {
     useEffect(() => {
         if (canvasRef.current) {
             const temp = canvasRef.current
-            // todo we need to listen for window size changes see https://stackoverflow.com/questions/68175873/detect-element-reference-height-change
-            setCanvasState((c) => {
-                return {...c, canvas: {width: temp.offsetWidth, height: temp.offsetHeight}}
-            })
+            const resizeObserver = new ResizeObserver(() => {
+                // Do what you want to do when the size of the element changes
+                setCanvasState((c) => {
+                    return {...c, canvas: {width: temp.offsetWidth, height: temp.offsetHeight}}
+                })
+            });
+            resizeObserver.observe(canvasRef.current);
+            return () => resizeObserver.disconnect(); // clean up
         }
     }, [canvasRef.current, canvasRef.current?.offsetWidth, canvasRef.current?.offsetHeight])
 
@@ -211,7 +216,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const wrapperRef = useRef<HTMLDivElement | null>(null)
     return (<div ref={wrapperRef}
-                 style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle}}>
+                 style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle, overflow: 'hidden'}}>
         <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasState.canvas.height}
                 width={canvasState.canvas.width}></canvas>
         {handles}
