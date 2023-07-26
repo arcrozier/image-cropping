@@ -18,7 +18,8 @@ const helloWorldRef = {current: undefined}
 const clickMeRef = {current: undefined}
 HelloWorld.args = {
     src: "https://res.cloudinary.com/practicaldev/image/fetch/s--Wzfozk3_--/c_imagga_scale,f_auto,fl_progressive,h_420,q_auto,w_1000/https://dev-to-uploads.s3.amazonaws.com/uploads/articles/dxyw74lpvryk4vslvwzc.png",
-    renderer: helloWorldRef
+    renderer: helloWorldRef,
+    thirds: true
 };
 
 export const ClickMe = Template.bind({});

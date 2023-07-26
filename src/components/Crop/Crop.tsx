@@ -67,9 +67,7 @@ const Handle = (props: HandleProps) => {
     const ref = useDraggable((delta) => {
         // this branch causes a new onDrag to be created each time the keyboard is updated
         // not great, but also not really a priority
-        props.setPosition((p) => {
-            return {x: p.x + delta.x, y: p.y + delta.y}
-        })
+        props.setPosition({x: props.position.x + delta.x, y: props.position.y + delta.y}, props.corner)
     }, (pressed) => {
         if (!pressed) {
             props.commitPosition()
@@ -154,7 +152,6 @@ const Crop = ({renderer, ...props}: CropProps) => {
             const ctx = canvasRef.current.getContext("2d")
             if (ctx && image) {
                 ctx.save()
-                ctx.clearRect(0, 0, canvasState.canvas.width, canvasState.canvas.height)
                 ctx.fillStyle = 'black'
                 ctx.fillRect(0, 0, canvasState.canvas.width, canvasState.canvas.height)
                 ctx.setTransform(canvasState.transform)
@@ -207,11 +204,20 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const handles: ReactElement[] = []
     if (corners) {
+        const thirds: ReactElement[] = []
+        if (props.thirds) {
+            for (let i = 1; i < 3; i++) {
+                thirds.push(<div style={{position: 'absolute', top: `${i * 33}%`, left: 0, width: '100%', height: '0.75px', backgroundColor: 'white'}}></div>)
+                thirds.push(<div style={{position: 'absolute', left: `${i * 33}%`, top: 0, height: '100%', width: '0.75px', backgroundColor:'white'}}></div>)
+            }
+        }
         for (let {pos, corner} of [{pos: corners.a, corner: Corner.TL}, {pos: corners.b, corner: Corner.TR}, {pos: corners.c, corner: Corner.BR}, {pos: corners.d, corner: Corner.BL}]) {
             handles.push(<Handle position={pos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={corner}/>)
         }
         handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), borderRadius: props.borderRadius ?? '50%', boxShadow: '0 0 0 999999px rgba(0, 0, 0, 0.7)'}}></div>)
-        handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: '1px', borderColor: 'white'}}></div>)
+        handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: '1px', borderColor: 'white'}}>
+            {thirds}
+        </div>)
     }
 
     const wrapperRef = useRef<HTMLDivElement | null>(null)
