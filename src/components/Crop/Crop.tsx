@@ -1,8 +1,17 @@
-import React, {CSSProperties, MutableRefObject, ReactElement, RefObject, useEffect, useRef, useState} from 'react'
+import React, {
+    CSSProperties,
+    MutableRefObject,
+    ReactElement,
+    RefObject,
+    useCallback,
+    useEffect,
+    useRef,
+    useState
+} from 'react'
 import {
-    CanvasState,
+    CanvasState, CROP_BUFFER,
     CropState,
-    Dimension,
+    Dimension, fitPoint,
     getCanvasCorners,
     getCorners,
     imageToCanvas,
@@ -35,6 +44,8 @@ enum Corner {
     TL, TR, BL, BR
 }
 
+const MIN_CROP = 10;
+
 
 /**
  * Props for corner of crop area
@@ -49,7 +60,7 @@ interface HandleProps {
      *
      * @param p The new point, in canvas coordinates
      */
-    setPosition: React.Dispatch<React.SetStateAction<Point>>,
+    setPosition: (pos: Point, corner: Corner) => void,
     /**
      * Called when the user finishes moving the point (for mouse movements, this is the mouse up event, for keyboard
      * interactions, key up)
@@ -196,11 +207,94 @@ const Crop = ({renderer, ...props}: CropProps) => {
     }, [renderer])
 
     useEffect(() => {
-        setCorners(getCanvasCorners(cropState, canvasState.transform))
-        //corners.current = getCorners(cropState)
-    }, [cropState, canvasState.transform])
+        const corners = getCanvasCorners(cropState, canvasState.transform)
+        setCorners(corners)
+        if (corners.a.x < CROP_BUFFER * canvasState.canvas.width || corners.b.x > (1 - CROP_BUFFER) * canvasState.canvas.width || corners.a.y < CROP_BUFFER * canvasState.canvas.height || corners.d.y > (1 - CROP_BUFFER) * canvasState.canvas.height) {
+            // careful this could become an infinite loop very easily
+            console.log("transforming to fit")
+            console.log(corners)
+            console.log(canvasState.canvas)
+            setCanvasState((c) => {return {...c, transform: transformToFit(cropState, c.canvas)}})
+        }
+    }, [cropState, canvasState.transform, canvasState.canvas])
 
-    const [testPos, setTestPos] = useState({x: 0, y: 0})
+    const setPosition = useCallback((pos: Point, corner: Corner) => {
+        // todo this immediately explodes and doesn't work at all
+        if (!corners) return
+        let opposite: Point;
+        switch (corner) {
+            case Corner.BL:
+                opposite = corners.b
+                break
+            case Corner.BR:
+                opposite = corners.a
+                break
+            case Corner.TR:
+                opposite = corners.d
+                break
+            case Corner.TL:
+                opposite = corners.c
+                break
+        }
+
+        let minX = MIN_CROP
+        let minY = MIN_CROP
+
+        if (props.aspect) {
+            if (props.aspect < 1) {
+                // portrait - minX is going to be MIN_CROP
+                minY = minX / props.aspect
+            } else if (props.aspect > 1) {
+                // landscape - minY is going to be MIN_CROP
+                minX = minY * props.aspect
+            }
+        }
+
+        switch (corner) {
+            case Corner.BR:
+            case Corner.TR:
+                // make sure x doesn't get too big
+                pos.x = Math.min(pos.x, opposite.x - minX)
+                break
+            case Corner.BL:
+            case Corner.TL:
+                // make sure x doesn't get too small
+                pos.x = Math.max(pos.x, opposite.x + minX)
+                break
+        }
+
+        switch (corner) {
+            case Corner.BR:
+            case Corner.BL:
+                // make sure y doesn't get too big
+                pos.y = Math.min(pos.y, opposite.y - minY)
+                break
+            case Corner.TR:
+            case Corner.TL:
+                // make sure y doesn't get too small
+                pos.y = Math.max(pos.y, opposite.y + minY)
+                break
+        }
+
+        setCropState((c) => fitPoint(pos, opposite, canvasState.image, props.aspect, c.angle))
+        // todo: ensure the new position does not make the box too small (10-20 canvas pixels?)
+        //      probably pretty easy if free-form, harder if there is an aspect ratio
+        //      call fitPoint and set crop state (also updates corners)
+        //      if the crop is now larger than the 0.9x scale of the canvas, also commit position
+    }, [corners, canvasState.image, props.aspect, setCropState])
+
+    const commitPosition = useCallback(() => {
+        setCanvasState((c) => {
+            return {...c, transform: transformToFit(cropState, c.canvas)}
+        })
+    }, [cropState])
+
+    // todo make the canvas draggable
+    //      on drag, update center and call fit crop with TRANSLATE
+    //      set crop state
+
+    // todo on rotate call fit crop with scale
+    //      set crop state and update angle
 
     const handles: ReactElement[] = []
     if (corners) {
@@ -212,7 +306,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
             }
         }
         for (let {pos, corner} of [{pos: corners.a, corner: Corner.TL}, {pos: corners.b, corner: Corner.TR}, {pos: corners.c, corner: Corner.BR}, {pos: corners.d, corner: Corner.BL}]) {
-            handles.push(<Handle position={pos} setPosition={setTestPos} commitPosition={() => 'cool'} corner={corner}/>)
+            handles.push(<Handle position={pos} setPosition={setPosition} commitPosition={commitPosition} corner={corner}/>)
         }
         handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), borderRadius: props.borderRadius ?? '50%', boxShadow: '0 0 0 999999px rgba(0, 0, 0, 0.7)'}}></div>)
         handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: '1px', borderColor: 'white'}}>

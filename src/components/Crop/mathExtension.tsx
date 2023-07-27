@@ -1,3 +1,5 @@
+import {number} from "prop-types";
+
 /**
  * Represents a point
  */
@@ -81,4 +83,8 @@ export function maxMagnitude(...values: number[]): number {
         if (Math.abs(a) > Math.abs(b)) return a;
         return b;
     })
+}
+
+export function approxEqual(a: number, b: number): boolean {
+    return Math.abs(a - b) < maxMagnitude(a, b) * Number.EPSILON
 }

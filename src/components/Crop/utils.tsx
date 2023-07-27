@@ -1,6 +1,6 @@
-import {clamp, identity, maxMagnitude, midpoint, Point, sign, signsMatch} from "./mathExtension";
+import {approxEqual, clamp, identity, maxMagnitude, midpoint, Point, sign, signsMatch} from "./mathExtension";
 
-const MIN_CROP = 10
+export const CROP_BUFFER = 0.05
 
 export enum Transformations {
     TRANSLATE, SCALE, ROTATE
@@ -61,7 +61,7 @@ function isWithin(p: Point, d: Dimension): boolean {
  */
 export function getCorners(crop: CropState): { a: Point, b: Point, c: Point, d: Point } {
     const rot = identity.rotate(crop.angle).translate(crop.x, crop.y)
-    const a = rot.transformPoint({x: -crop.width / 2, y: -crop.height / 2, z: 0, w: 1})
+    const a = rot.transformPoint({x: -crop.width / 2, y: -crop.height / 2})
     const b = rot.transformPoint({x: crop.width / 2, y: -crop.height / 2})
     const c = rot.transformPoint({x: crop.width / 2, y: crop.height / 2})
     const d = rot.transformPoint({x: -crop.width / 2, y: crop.height / 2})
@@ -76,12 +76,19 @@ export function getCorners(crop: CropState): { a: Point, b: Point, c: Point, d: 
 
 export function getCanvasCorners(crop: CropState, transform: DOMMatrixReadOnly) {
     const corners = getCorners(crop)
-    return {
+    const canvasCorners = {
         a: imageToCanvas(corners.a, transform),
         b: imageToCanvas(corners.b, transform),
         c: imageToCanvas(corners.c, transform),
         d: imageToCanvas(corners.d, transform)
     }
+    console.log(canvasCorners)
+    console.log(transform)
+    console.assert(approxEqual(canvasCorners.a.x, canvasCorners.d.x))
+    console.assert(approxEqual(canvasCorners.a.y, canvasCorners.b.y))
+    console.assert(approxEqual(canvasCorners.b.x, canvasCorners.c.x))
+    console.assert(approxEqual(canvasCorners.d.y, canvasCorners.c.y))
+    return canvasCorners
 }
 
 
@@ -120,7 +127,7 @@ export function transformToFit(c: CropState, windowSize: Dimension): DOMMatrix {
     // we have to do animations manually
     // drawing has to be done after applying the transformation
     const matrix = new DOMMatrix()
-    const scale = Math.min(windowSize.width / c.width, windowSize.height / c.height) * 0.9
+    const scale = Math.min(windowSize.width / c.width, windowSize.height / c.height) * (1 - CROP_BUFFER * 2 - 0.01)  // scale down a little more to play it safe on the infinite loops
     const centerX = windowSize.width / 2
     const centerY = windowSize.height / 2
     matrix
