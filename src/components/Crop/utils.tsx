@@ -143,10 +143,10 @@ export function transformToFit(c: CropState, windowSize: Dimension): DOMMatrix {
  * Converts coordinates in a screen reference frame to the image
  *
  * @param p             the point to project
- * @param canvasState   the canvas the point is projected to
+ * @param transform     the canvas transform to project the point with. Must be invertible
  */
-export function canvasToImage(p: Point, canvasState: CanvasState): Point {
-    return canvasState.transform.inverse().transformPoint(p)
+export function canvasToImage(p: Point, transform: DOMMatrixReadOnly): Point {
+    return transform.inverse().transformPoint(p)
 }
 
 /**

@@ -9,7 +9,7 @@ import React, {
     useState
 } from 'react'
 import {
-    CanvasState, CROP_BUFFER,
+    CanvasState, canvasToImage, CROP_BUFFER,
     CropState,
     Dimension, fitPoint,
     getCanvasCorners,
@@ -253,31 +253,31 @@ const Crop = ({renderer, ...props}: CropProps) => {
         switch (corner) {
             case Corner.BR:
             case Corner.TR:
-                // make sure x doesn't get too big
+                // make sure x doesn't get too big (too far left)
                 pos.x = Math.min(pos.x, opposite.x - minX)
                 break
             case Corner.BL:
             case Corner.TL:
-                // make sure x doesn't get too small
+                // make sure x doesn't get too small (too far right)
                 pos.x = Math.max(pos.x, opposite.x + minX)
                 break
         }
 
         switch (corner) {
-            case Corner.BR:
-            case Corner.BL:
-                // make sure y doesn't get too big
-                pos.y = Math.min(pos.y, opposite.y - minY)
-                break
             case Corner.TR:
             case Corner.TL:
-                // make sure y doesn't get too small
+                // make sure y doesn't get too big (bigger y means further down the screen)
+                pos.y = Math.min(pos.y, opposite.y - minY)
+                break
+            case Corner.BR:
+            case Corner.BL:
+                // make sure y doesn't get too small (too far up)
                 pos.y = Math.max(pos.y, opposite.y + minY)
                 break
         }
 
-        setCropState((c) => fitPoint(pos, opposite, canvasState.image, props.aspect, c.angle))
-    }, [corners, canvasState.image, props.aspect, setCropState])
+        setCropState((c) => fitPoint(canvasToImage(pos, canvasState.transform), canvasToImage(opposite, canvasState.transform), canvasState.image, props.aspect, c.angle))
+    }, [corners, canvasState.image, canvasState.transform, props.aspect, setCropState])
 
     const commitPosition = useCallback(() => {
         setCanvasState((c) => {
