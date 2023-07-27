@@ -277,10 +277,6 @@ const Crop = ({renderer, ...props}: CropProps) => {
         }
 
         setCropState((c) => fitPoint(pos, opposite, canvasState.image, props.aspect, c.angle))
-        // todo: ensure the new position does not make the box too small (10-20 canvas pixels?)
-        //      probably pretty easy if free-form, harder if there is an aspect ratio
-        //      call fitPoint and set crop state (also updates corners)
-        //      if the crop is now larger than the 0.9x scale of the canvas, also commit position
     }, [corners, canvasState.image, props.aspect, setCropState])
 
     const commitPosition = useCallback(() => {
