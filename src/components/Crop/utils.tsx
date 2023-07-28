@@ -1,4 +1,4 @@
-import {approxEqual, clamp, identity, maxMagnitude, midpoint, Point, sign, signsMatch} from "./mathExtension";
+import {clamp, identity, maxMagnitude, midpoint, Point, sign, signsMatch} from "./mathExtension";
 
 export const CROP_BUFFER = 0.05
 
@@ -36,16 +36,6 @@ export interface Dimension {
 }
 
 
-/**
- * Used for checking floating point equality for sanity checks
- * <p>
- * This is essentially an arbitrarily small value. Number.EPSILON is 2^-52^, we make it a little bigger for safety with
- * larger numbers. This should not be used for verifying equality, since this will be too small for large numbers (10^6^)
- * and too big for small numbers (close to 0)
- */
-const DELTA = Number.EPSILON * 1000
-
-
 function isWithin(p: Point, d: Dimension): boolean {
     return (p.x > 0 && p.x <= d.width - 1 && p.y > 0 && p.y <= d.height - 1)
 }
@@ -76,19 +66,12 @@ export function getCorners(crop: CropState): { a: Point, b: Point, c: Point, d: 
 
 export function getCanvasCorners(crop: CropState, transform: DOMMatrixReadOnly) {
     const corners = getCorners(crop)
-    const canvasCorners = {
+    return {
         a: imageToCanvas(corners.a, transform),
         b: imageToCanvas(corners.b, transform),
         c: imageToCanvas(corners.c, transform),
         d: imageToCanvas(corners.d, transform)
     }
-    console.log(canvasCorners)
-    console.log(transform)
-    console.assert(approxEqual(canvasCorners.a.x, canvasCorners.d.x))
-    console.assert(approxEqual(canvasCorners.a.y, canvasCorners.b.y))
-    console.assert(approxEqual(canvasCorners.b.x, canvasCorners.c.x))
-    console.assert(approxEqual(canvasCorners.d.y, canvasCorners.c.y))
-    return canvasCorners
 }
 
 
@@ -124,10 +107,9 @@ function nearestPointInBounds(p: Point, d: Dimension): Point {
  * @param windowSize The window size to fit
  */
 export function transformToFit(c: CropState, windowSize: Dimension): DOMMatrix {
-    // we have to do animations manually
-    // drawing has to be done after applying the transformation
+    // todo animations
     const matrix = new DOMMatrix()
-    const scale = Math.min(windowSize.width / c.width, windowSize.height / c.height) * (1 - CROP_BUFFER * 2 - 0.01)  // scale down a little more to play it safe on the infinite loops
+    const scale = Math.min(windowSize.width / c.width, windowSize.height / c.height) * (1 - CROP_BUFFER * 2 - 0.0001)  // scale down a little more to play it safe on the infinite loops
     const centerX = windowSize.width / 2
     const centerY = windowSize.height / 2
     matrix
@@ -242,7 +224,7 @@ export function fitPoint(p: Point, o: Point, image: Dimension, aspect: number | 
 function setCorner(pPrime: Point, o: Point, angle: number): CropState {
     const center = midpoint(pPrime, o)
     const pTemp = getInverseCorner(pPrime, center, angle)
-    return {...center, angle: angle, height: pTemp.y * 2, width: pTemp.x * 2}
+    return {...center, angle: angle, height: Math.abs(pTemp.y * 2), width: Math.abs(pTemp.x * 2)}
 }
 
 

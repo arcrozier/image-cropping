@@ -11,14 +11,12 @@ import React, {
 import {
     CanvasState, canvasToImage, CROP_BUFFER,
     CropState,
-    Dimension, fitPoint,
+    fitPoint,
     getCanvasCorners,
-    getCorners,
-    imageToCanvas,
     resetCrop,
     transformToFit
 } from "./utils";
-import {identity, Point} from "./mathExtension";
+import {clamp, identity, Point} from "./mathExtension";
 import useDraggable from '../useDraggable';
 
 export interface CropProps {
@@ -150,16 +148,11 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const canvasRef = props.canvasRef ? props.canvasRef : useRef<HTMLCanvasElement | null>(null)
 
-    useEffect(() => {
-        setCanvasState((c) => {
-            return {...c, transform: transformToFit(cropState, c.canvas)}
-        })
-        console.log("recomputing transformation")
-    }, [cropState, canvasState.canvas])
-
 
     useEffect(() => {
         if (canvasRef.current) {
+            canvasRef.current.width = canvasState.canvas.width
+            canvasRef.current.height = canvasState.canvas.height
             const ctx = canvasRef.current.getContext("2d")
             if (ctx && image) {
                 ctx.save()
@@ -170,15 +163,16 @@ const Crop = ({renderer, ...props}: CropProps) => {
                 ctx.restore()
             }
         }
-    }, [canvasRef.current, canvasState.transform, image])
+    }, [canvasRef.current, canvasState.transform, canvasState.canvas, image])
 
     useEffect(() => {
         if (canvasRef.current) {
             const temp = canvasRef.current
             const resizeObserver = new ResizeObserver(() => {
                 // Do what you want to do when the size of the element changes
+                const canvas = {width: temp.offsetWidth, height: temp.offsetHeight}
                 setCanvasState((c) => {
-                    return {...c, canvas: {width: temp.offsetWidth, height: temp.offsetHeight}}
+                    return {...c, transform: transformToFit(cropState, canvas), canvas: canvas}
                 })
             });
             resizeObserver.observe(canvasRef.current);
@@ -192,6 +186,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         img.src = props.src
         img.onload = () => {
             setImage(img)
+            setCanvasState((c) => {return {...c, image: {width: img.naturalWidth, height: img.naturalHeight}}})
             setCropState(resetCrop({width: img.naturalWidth, height: img.naturalHeight}, props.aspect))
         }
         // we don't want to reset the crop when the aspect changes
@@ -206,20 +201,20 @@ const Crop = ({renderer, ...props}: CropProps) => {
         }
     }, [renderer])
 
+    const cornerClamp = (pos: Point) => {
+        return {x: clamp(pos.x, CROP_BUFFER * canvasState.canvas.width, (1 - CROP_BUFFER) * canvasState.canvas.width), y: clamp(pos.y, CROP_BUFFER * canvasState.canvas.height, (1- CROP_BUFFER) * canvasState.canvas.height)}
+    }
+
     useEffect(() => {
         const corners = getCanvasCorners(cropState, canvasState.transform)
         setCorners(corners)
         if (corners.a.x < CROP_BUFFER * canvasState.canvas.width || corners.b.x > (1 - CROP_BUFFER) * canvasState.canvas.width || corners.a.y < CROP_BUFFER * canvasState.canvas.height || corners.d.y > (1 - CROP_BUFFER) * canvasState.canvas.height) {
             // careful this could become an infinite loop very easily
-            console.log("transforming to fit")
-            console.log(corners)
-            console.log(canvasState.canvas)
             setCanvasState((c) => {return {...c, transform: transformToFit(cropState, c.canvas)}})
         }
     }, [cropState, canvasState.transform, canvasState.canvas])
 
     const setPosition = useCallback((pos: Point, corner: Corner) => {
-        // todo this immediately explodes and doesn't work at all
         if (!corners) return
         let opposite: Point;
         switch (corner) {
@@ -253,13 +248,13 @@ const Crop = ({renderer, ...props}: CropProps) => {
         switch (corner) {
             case Corner.BR:
             case Corner.TR:
-                // make sure x doesn't get too big (too far left)
-                pos.x = Math.min(pos.x, opposite.x - minX)
+                // make sure x doesn't get too small (too far left)
+                pos.x = Math.max(pos.x, opposite.x + minX)
                 break
             case Corner.BL:
             case Corner.TL:
-                // make sure x doesn't get too small (too far right)
-                pos.x = Math.max(pos.x, opposite.x + minX)
+                // make sure x doesn't get too big (too far right)
+                pos.x = Math.min(pos.x, opposite.x - minX)
                 break
         }
 
@@ -302,7 +297,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
             }
         }
         for (let {pos, corner} of [{pos: corners.a, corner: Corner.TL}, {pos: corners.b, corner: Corner.TR}, {pos: corners.c, corner: Corner.BR}, {pos: corners.d, corner: Corner.BL}]) {
-            handles.push(<Handle position={pos} setPosition={setPosition} commitPosition={commitPosition} corner={corner}/>)
+            handles.push(<Handle position={cornerClamp(pos)} setPosition={setPosition} commitPosition={commitPosition} corner={corner}/>)
         }
         handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), borderRadius: props.borderRadius ?? '50%', boxShadow: '0 0 0 999999px rgba(0, 0, 0, 0.7)'}}></div>)
         handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: '1px', borderColor: 'white'}}>
@@ -313,8 +308,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null)
     return (<div ref={wrapperRef}
                  style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle, overflow: 'hidden'}}>
-        <canvas ref={canvasRef} style={{height: "100%", width: "100%"}} height={canvasState.canvas.height}
-                width={canvasState.canvas.width}></canvas>
+        <canvas ref={canvasRef} style={{height: "100%", width: "100%"}}></canvas>
         {handles}
 
     </div>)
