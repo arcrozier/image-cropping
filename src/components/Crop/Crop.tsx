@@ -216,19 +216,24 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const setPosition = useCallback((pos: Point, corner: Corner) => {
         if (!corners) return
-        let opposite: Point;
+        let opposite: Point
+        let diagonal: 1 | -1
         switch (corner) {
             case Corner.BL:
                 opposite = corners.b
+                diagonal = -1
                 break
             case Corner.BR:
                 opposite = corners.a
+                diagonal = 1
                 break
             case Corner.TR:
                 opposite = corners.d
+                diagonal = -1
                 break
             case Corner.TL:
                 opposite = corners.c
+                diagonal = 1
                 break
         }
 
@@ -271,7 +276,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
                 break
         }
 
-        setCropState((c) => fitPoint(canvasToImage(pos, canvasState.transform), canvasToImage(opposite, canvasState.transform), canvasState.image, props.aspect, c.angle))
+        setCropState((c) => fitPoint(canvasToImage(pos, canvasState.transform), canvasToImage(opposite, canvasState.transform), canvasState.image, props.aspect, c.angle, diagonal))
     }, [corners, canvasState.image, canvasState.transform, props.aspect, setCropState])
 
     const commitPosition = useCallback(() => {

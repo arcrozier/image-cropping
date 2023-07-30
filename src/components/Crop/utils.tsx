@@ -171,8 +171,9 @@ export function shiftRequired(p: Point, image: Dimension): { dx: number, dy: num
  * @param image The image to fit the point(s) within
  * @param aspect The aspect ratio. May be undefined for free aspect ratio
  * @param angle The angle of the crop rectangle in radians
+ * @param diagonal The diagonal between the two points. 1 for the diagonal between points a and c, and -1 for the one between points b and d
  */
-export function fitPoint(p: Point, o: Point, image: Dimension, aspect: number | undefined, angle: number): CropState {
+export function fitPoint(p: Point, o: Point, image: Dimension, aspect: number | undefined, angle: number, diagonal: 1 | -1): CropState {
     // handles case where both points are off the same side of the image
     // this should never actually happen, but we want to avoid a situation where the crop rectangle becomes 1 or 0 dimensional
     const pShift = shiftRequired(p, image)
@@ -194,18 +195,48 @@ export function fitPoint(p: Point, o: Point, image: Dimension, aspect: number | 
     } else {
         // we will define a line that intersects o with the same slope as the aspect ratio after rotating
         // we define a vector that represents the aspect ratio and then rotate it by the angle
-        const slopeMagnitude = Math.sqrt(aspect * aspect + 1)
         // slope is a unit vector
-        const slope = identity.rotate(angle).transformPoint({x: aspect / slopeMagnitude, y: 1 / slopeMagnitude})
+        const slope = identity.rotate(angle).transformPoint({x: aspect, y: diagonal})
+        const t1x = -o.x / slope.x
+        const t2x = (image.width - 1 - o.x) / slope.x
+        const t1y = -o.y / slope.y
+        const t2y = (image.height - 1 - o.y) / slope.y
 
         // lower and upper are the domain of valid inputs to the parametric equation that defines where this point can be
-        const lower = Math.max(-o.x / slope.x, -o.y / slope.y)
-        const upper = Math.min((image.width - 1 - o.x) / slope.x, (image.height - 1 - o.y) / slope.y)
+        let lower
+        let upper
+
+        if (slope.x === 0) {
+            // vertical
+            lower = t1y
+            upper = t2y
+        } else if (slope.y === 0) {
+            // horizontal
+            lower = t1x
+            upper = t2x
+        } else if (slope.x > 0 && slope.y > 0) {
+            // quadrant 1
+            lower = Math.max(t1x, t1y)
+            upper = Math.min(t2x, t2y)
+        } else if (slope.x < 0 && slope.y > 0) {
+            // quadrant 2
+            lower = Math.max(t1y, t2x)
+            upper = Math.min(t2y, t1x)
+        } else if (slope.x < 0 && slope.y < 0) {
+            // quadrant 3
+            lower = Math.max(t2y, t2x)
+            upper = Math.min(t1y, t1x)
+        } else {
+            // quadrant 4
+            lower = Math.max(t2y, t1x)
+            upper = Math.min(t1y, t2x)
+        }
+
 
         // find the value of t for the point closest to p on the line
         const t = (slope.y * (p.y - o.y) + slope.x * (p.x - o.x)) / (Math.pow(slope.y, 2) + Math.pow(slope.x, 2))
 
-        const tFit = clamp(t, lower, upper)
+        const tFit = clamp(t, Math.min(lower, upper), Math.max(lower, upper))
 
         pPrime = {x: o.x + tFit * slope.x, y: o.y + tFit * slope.y}
     }
@@ -244,19 +275,19 @@ export function fitCrop(c: CropState, image: Dimension, aspect: number | undefin
             // the user has tried to pull one or more control points outside the image bounds
             // move anchor coordinate and/or dimension to fit
             if (!isWithin(points.a, image)) {
-                cPrime = fitPoint(points.a, points.c, image, aspect, c.angle)
+                cPrime = fitPoint(points.a, points.c, image, aspect, c.angle, 1)
                 points = getCorners(cPrime)
             }
             if (!isWithin(points.b, image)) {
-                cPrime = fitPoint(points.b, points.d, image, aspect, c.angle)
+                cPrime = fitPoint(points.b, points.d, image, aspect, c.angle, -1)
                 points = getCorners(cPrime)
             }
             if (!isWithin(points.c, image)) {
-                cPrime = fitPoint(points.c, points.a, image, aspect, c.angle)
+                cPrime = fitPoint(points.c, points.a, image, aspect, c.angle, 1)
                 points = getCorners(cPrime)
             }
             if (!isWithin(points.d, image)) {
-                cPrime = fitPoint(points.d, points.b, image, aspect, c.angle)
+                cPrime = fitPoint(points.d, points.b, image, aspect, c.angle, -1)
             }
             break
         case Transformations.TRANSLATE:
