@@ -86,3 +86,7 @@ export function maxMagnitude(...values: number[]): number {
 export function approxEqual(a: number, b: number): boolean {
     return Math.abs(a - b) < maxMagnitude(a, b) * Number.EPSILON
 }
+
+export function zeroIfNaN(a: number): number {
+    return isFinite(a) ? a : 0
+}

@@ -20,7 +20,7 @@ import {
     Transformations,
     transformToFit
 } from "./utils";
-import {clamp, identity, Point} from "./mathExtension";
+import {clamp, identity, Point, zeroIfNaN} from "./mathExtension";
 import useDraggable from '../useDraggable';
 
 export interface CropProps {
@@ -106,10 +106,12 @@ const Handle = (props: HandleProps) => {
             cursor = 'ne-resize'
             corner = 'top right'
     }
+    const top = props.position.y - HANDLE_SIZE / 2
+    const left = props.position.x - HANDLE_SIZE / 2
     return (<div style={{
         position: 'absolute',
-        top: props.position.y - HANDLE_SIZE / 2,
-        left: props.position.x - HANDLE_SIZE / 2,
+        top: isFinite(top) ? top : 0,
+        left: isFinite(left) ? left : 0,
         backgroundColor: 'green',
         height: `${HANDLE_SIZE}px`,
         width: `${HANDLE_SIZE}px`,
@@ -215,7 +217,9 @@ const Crop = ({renderer, ...props}: CropProps) => {
     }, [renderer])
 
     const cornerClamp = (pos: Point) => {
-        return {x: clamp(pos.x, CROP_BUFFER * canvasState.canvas.width, (1 - CROP_BUFFER) * canvasState.canvas.width), y: clamp(pos.y, CROP_BUFFER * canvasState.canvas.height, (1- CROP_BUFFER) * canvasState.canvas.height)}
+        const x = clamp(zeroIfNaN(pos.x), CROP_BUFFER * canvasState.canvas.width, (1 - CROP_BUFFER) * canvasState.canvas.width)
+        const y = clamp(zeroIfNaN(pos.y), CROP_BUFFER * canvasState.canvas.height, (1- CROP_BUFFER) * canvasState.canvas.height)
+        return {x: x, y: y}
     }
 
     useEffect(() => {
@@ -306,15 +310,15 @@ const Crop = ({renderer, ...props}: CropProps) => {
         const thirds: ReactElement[] = []
         if (props.thirds) {
             for (let i = 1; i < 3; i++) {
-                thirds.push(<div style={{position: 'absolute', top: `${i * 33}%`, left: 0, width: '100%', height: '0.75px', backgroundColor: 'white'}}></div>)
-                thirds.push(<div style={{position: 'absolute', left: `${i * 33}%`, top: 0, height: '100%', width: '0.75px', backgroundColor:'white'}}></div>)
+                thirds.push(<div key={"h-third-" + i} style={{position: 'absolute', top: `${i * 33}%`, left: 0, width: '100%', height: '0.75px', backgroundColor: 'white'}}></div>)
+                thirds.push(<div key={"v-third-" + i} style={{position: 'absolute', left: `${i * 33}%`, top: 0, height: '100%', width: '0.75px', backgroundColor:'white'}}></div>)
             }
         }
         for (let {pos, corner} of [{pos: corners.a, corner: Corner.TL}, {pos: corners.b, corner: Corner.TR}, {pos: corners.c, corner: Corner.BR}, {pos: corners.d, corner: Corner.BL}]) {
-            handles.push(<Handle position={cornerClamp(pos)} setPosition={setPosition} commitPosition={commitPosition} corner={corner}/>)
+            handles.push(<Handle key={`${corner}`} position={cornerClamp(pos)} setPosition={setPosition} commitPosition={commitPosition} corner={corner}/>)
         }
-        handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), borderRadius: props.borderRadius ?? '50%', boxShadow: '0 0 0 999999px rgba(0, 0, 0, 0.7)'}}></div>)
-        handles.push(<div style={{position: 'absolute', top: corners.a.y, left: corners.a.x, width: (corners.b.x - corners.a.x), height: (corners.d.y - corners.a.y), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: '1px', borderColor: 'white'}}>
+        handles.push(<div key={"matte"} style={{position: 'absolute', top: zeroIfNaN(corners.a.y), left: zeroIfNaN(corners.a.x), width: zeroIfNaN(corners.b.x - corners.a.x), height: zeroIfNaN(corners.d.y - corners.a.y), borderRadius: props.borderRadius ?? '50%', boxShadow: '0 0 0 999999px rgba(0, 0, 0, 0.7)'}}></div>)
+        handles.push(<div key={"border"} style={{position: 'absolute', top: zeroIfNaN(corners.a.y), left: zeroIfNaN(corners.a.x), width: zeroIfNaN(corners.b.x - corners.a.x), height: zeroIfNaN(corners.d.y - corners.a.y), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: '1px', borderColor: 'white'}}>
             {thirds}
         </div>)
     }
