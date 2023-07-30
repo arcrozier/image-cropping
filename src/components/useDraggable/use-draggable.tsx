@@ -114,6 +114,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
 
             mouseOffset.current = {x: e.offsetX, y: e.offsetY}
             setPressed(true);
+            e.stopPropagation()
         };
 
         const handleKeyPress = (e: KeyboardEvent) => {
@@ -140,6 +141,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                 }
                 return true
             })
+            e.stopPropagation()
         }
         elem.addEventListener("mousedown", handleMouseDown);
         elem.addEventListener("keydown", handleKeyPress)
@@ -178,6 +180,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                 e.target.style.userSelect = "auto";
             }
             setPressed(false);
+            e.stopPropagation()
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
@@ -202,6 +205,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                 setPressed(false)
                 keyMoveLoop.cancel()
             }
+            e.stopPropagation()
         }
         // subscribe to mousemove and mouseup on document, otherwise you
         // can escape bounds of element while dragging and get stuck

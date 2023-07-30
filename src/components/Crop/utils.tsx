@@ -301,12 +301,17 @@ export function fitCrop(c: CropState, image: Dimension, aspect: number | undefin
                 else if (!signsMatch(delta.dx, distance.dx)) {
                     // one point needs to shift left, the other right, not possible
                     // the crop is currently larger than the image, no translation can improve the situation
+                    console.log("falling back to scale (x)")
                     return fitCrop(c, image, aspect, Transformations.SCALE)
                 } else delta.dx = maxMagnitude(delta.dx, distance.dx)
 
 
                 if (delta.dy === 0) delta.dy = distance.dy
-                else if (!signsMatch(delta.dy, distance.dy)) return fitCrop(c, image, aspect, Transformations.SCALE)  // one point needs to shift up, the other down, not possible
+                else if (!signsMatch(delta.dy, distance.dy)) {
+                    // one point needs to shift up, the other down, not possible
+                    console.log("falling back to scale (y)")
+                    return fitCrop(c, image, aspect, Transformations.SCALE)
+                }
                 else delta.dy = maxMagnitude(delta.dy, distance.dy)
             }
 

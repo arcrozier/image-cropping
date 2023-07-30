@@ -9,11 +9,15 @@ import React, {
     useState
 } from 'react'
 import {
-    CanvasState, canvasToImage, CROP_BUFFER,
+    CanvasState,
+    canvasToImage,
+    CROP_BUFFER,
     CropState,
+    fitCrop,
     fitPoint,
     getCanvasCorners,
     resetCrop,
+    Transformations,
     transformToFit
 } from "./utils";
 import {clamp, identity, Point} from "./mathExtension";
@@ -148,6 +152,13 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const canvasRef = props.canvasRef ? props.canvasRef : useRef<HTMLCanvasElement | null>(null)
 
+    const wrapperRef = useDraggable((delta) => {
+        setCropState((c) => {
+            const temp = fitCrop({...c, x: c.x - delta.x, y: c.y - delta.y}, canvasState.image, props.aspect, Transformations.TRANSLATE)
+            setCanvasState((c) => {return {...c, transform: transformToFit(temp, canvasState.canvas)}})
+            return temp
+        })
+    })
 
     useEffect(() => {
         if (canvasRef.current) {
@@ -178,7 +189,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
             resizeObserver.observe(canvasRef.current);
             return () => resizeObserver.disconnect(); // clean up
         }
-    }, [canvasRef.current, canvasRef.current?.offsetWidth, canvasRef.current?.offsetHeight])
+    }, [canvasRef.current])
 
     useEffect(() => {
         const img = new Image()
@@ -285,10 +296,6 @@ const Crop = ({renderer, ...props}: CropProps) => {
         })
     }, [cropState])
 
-    // todo make the canvas draggable
-    //      on drag, update center and call fit crop with TRANSLATE
-    //      set crop state
-
     // todo on rotate call fit crop with scale
     //      set crop state and update angle
 
@@ -310,7 +317,6 @@ const Crop = ({renderer, ...props}: CropProps) => {
         </div>)
     }
 
-    const wrapperRef = useRef<HTMLDivElement | null>(null)
     return (<div ref={wrapperRef}
                  style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle, overflow: 'hidden'}}>
         <canvas ref={canvasRef} style={{height: "100%", width: "100%"}}></canvas>
