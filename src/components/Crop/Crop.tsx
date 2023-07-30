@@ -15,7 +15,7 @@ import {
     CropState,
     fitCrop,
     fitPoint,
-    getCanvasCorners,
+    getCanvasCorners, imageToCanvas,
     resetCrop,
     Transformations,
     transformToFit
@@ -154,7 +154,9 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const wrapperRef = useDraggable((delta) => {
         setCropState((c) => {
-            const temp = fitCrop({...c, x: c.x - delta.x, y: c.y - delta.y}, canvasState.image, props.aspect, Transformations.TRANSLATE)
+            const screenPos = imageToCanvas(c, canvasState.transform)
+            const imagePos = canvasToImage({x: screenPos.x - delta.x, y: screenPos.y - delta.y}, canvasState.transform)
+            const temp = fitCrop({...c, x: imagePos.x, y: imagePos.y}, canvasState.image, props.aspect, Transformations.TRANSLATE)
             setCanvasState((c) => {return {...c, transform: transformToFit(temp, canvasState.canvas)}})
             return temp
         })

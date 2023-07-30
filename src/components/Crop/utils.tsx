@@ -3,7 +3,7 @@ import {clamp, identity, maxMagnitude, midpoint, Point, sign, signsMatch} from "
 export const CROP_BUFFER = 0.05
 
 export enum Transformations {
-    TRANSLATE, SCALE, ROTATE
+    TRANSLATE, SCALE
 }
 
 /**
