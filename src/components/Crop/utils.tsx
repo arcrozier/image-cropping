@@ -11,8 +11,8 @@ export enum Transformations {
  */
 export interface CanvasState {
     transform: DOMMatrixReadOnly,
-    canvas: Dimension,  // the dimension of the canvas in CSS pixels
-    image: Dimension  // this should be saved when the image gets loaded in
+    canvas: Dimension | undefined,  // the dimension of the canvas in CSS pixels
+    image: Dimension | undefined  // this should be saved when the image gets loaded in
 }
 
 /**

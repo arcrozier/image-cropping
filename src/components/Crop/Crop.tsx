@@ -15,13 +15,15 @@ import {
     CropState,
     fitCrop,
     fitPoint,
-    getCanvasCorners, imageToCanvas,
+    getCanvasCorners,
+    imageToCanvas,
     resetCrop,
     Transformations,
     transformToFit
 } from "./utils";
 import {clamp, identity, Point, zeroIfNaN} from "./mathExtension";
 import useDraggable from '../useDraggable';
+import './crop.css'
 
 export interface CropProps {
     src: string,
@@ -110,9 +112,8 @@ const Handle = (props: HandleProps) => {
     const left = props.position.x - HANDLE_SIZE / 2
     return (<div style={{
         position: 'absolute',
-        top: isFinite(top) ? top : 0,
-        left: isFinite(left) ? left : 0,
-        backgroundColor: 'green',
+        top: zeroIfNaN(top),
+        left: zeroIfNaN(left),
         height: `${HANDLE_SIZE}px`,
         width: `${HANDLE_SIZE}px`,
         cursor: cursor,
@@ -120,13 +121,24 @@ const Handle = (props: HandleProps) => {
         borderRadius: '50%',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center'
-    }} ref={ref} role={'slider'} tabIndex={0} aria-label={`Handle for ${corner} corner of crop area`}>
-        <div style={{
-            borderRadius: '50%', backgroundColor: 'red', width: `25%`, height: `25%`, zIndex: 3,
-            ...props.handleStyle}}>
+        alignItems: 'center',
+        overflow: 'visible'
+    }} ref={ref}>
 
-        </div>
+            <div style={{
+                borderRadius: '50%', backgroundColor: 'white', width: `25%`, height: `25%`, zIndex: 3, display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                ...props.handleStyle
+            }}>
+                <div className={'focus-grow'} role={'slider'} tabIndex={0}
+                     aria-label={`Handle for ${corner} corner of crop area`} style={{
+                    zIndex: 3, borderRadius: "50%", overflow: "hidden",
+                    outline: 'none', backgroundColor: 'rgba(255, 255, 255, 0.5)', flexShrink: 0
+                }}>
+                </div>
+            </div>
+
     </div>)
 }
 
@@ -146,26 +158,39 @@ const Crop = ({renderer, ...props}: CropProps) => {
     // need to set canvas height/width to computed height and width of parent
     // then, positions relative to the canvas are the same as positions relative to the screen
 
-    const [corners, setCorners] = useState<{a: Point, b: Point, c: Point, d: Point}>()
+    const [corners, setCorners] = useState<{ a: Point, b: Point, c: Point, d: Point }>()
 
     const [cropState, setCropState] = useState<CropState>(resetCrop({width: 0, height: 0}, props.aspect))
-    const [canvasState, setCanvasState] = useState<CanvasState>({transform: identity, image: {width: 0, height: 0}, canvas: {width: 0, height: 0}})
+    const [canvasState, setCanvasState] = useState<CanvasState>({
+        transform: identity,
+        image: undefined,
+        canvas: undefined
+    })
     const [image, setImage] = useState<HTMLImageElement | null>(null)
 
     const canvasRef = props.canvasRef ? props.canvasRef : useRef<HTMLCanvasElement | null>(null)
 
     const wrapperRef = useDraggable((delta) => {
+        // todo key presses somehow completely reset all state
         setCropState((c) => {
+            if (!canvasState.image) return c
             const screenPos = imageToCanvas(c, canvasState.transform)
             const imagePos = canvasToImage({x: screenPos.x - delta.x, y: screenPos.y - delta.y}, canvasState.transform)
-            const temp = fitCrop({...c, x: imagePos.x, y: imagePos.y}, canvasState.image, props.aspect, Transformations.TRANSLATE)
-            setCanvasState((c) => {return {...c, transform: transformToFit(temp, canvasState.canvas)}})
+            const temp = fitCrop({
+                ...c,
+                x: imagePos.x,
+                y: imagePos.y
+            }, canvasState.image, props.aspect, Transformations.TRANSLATE)
+            setCanvasState((c) => {
+                if (!c.canvas) return c
+                return {...c, transform: transformToFit(temp, c.canvas)}
+            })
             return temp
         })
     })
 
     useEffect(() => {
-        if (canvasRef.current) {
+        if (canvasRef.current && canvasState.canvas) {
             canvasRef.current.width = canvasState.canvas.width
             canvasRef.current.height = canvasState.canvas.height
             const ctx = canvasRef.current.getContext("2d")
@@ -201,7 +226,9 @@ const Crop = ({renderer, ...props}: CropProps) => {
         img.src = props.src
         img.onload = () => {
             setImage(img)
-            setCanvasState((c) => {return {...c, image: {width: img.naturalWidth, height: img.naturalHeight}}})
+            setCanvasState((c) => {
+                return {...c, image: {width: img.naturalWidth, height: img.naturalHeight}}
+            })
             setCropState(resetCrop({width: img.naturalWidth, height: img.naturalHeight}, props.aspect))
         }
         // we don't want to reset the crop when the aspect changes
@@ -217,21 +244,27 @@ const Crop = ({renderer, ...props}: CropProps) => {
     }, [renderer])
 
     const cornerClamp = (pos: Point) => {
+        if (!canvasState.canvas) return pos
         const x = clamp(zeroIfNaN(pos.x), CROP_BUFFER * canvasState.canvas.width, (1 - CROP_BUFFER) * canvasState.canvas.width)
-        const y = clamp(zeroIfNaN(pos.y), CROP_BUFFER * canvasState.canvas.height, (1- CROP_BUFFER) * canvasState.canvas.height)
+        const y = clamp(zeroIfNaN(pos.y), CROP_BUFFER * canvasState.canvas.height, (1 - CROP_BUFFER) * canvasState.canvas.height)
         return {x: x, y: y}
     }
 
     useEffect(() => {
+        if (!canvasState.image || !canvasState.canvas) return
         const corners = getCanvasCorners(cropState, canvasState.transform)
         setCorners(corners)
         if (corners.a.x < CROP_BUFFER * canvasState.canvas.width || corners.b.x > (1 - CROP_BUFFER) * canvasState.canvas.width || corners.a.y < CROP_BUFFER * canvasState.canvas.height || corners.d.y > (1 - CROP_BUFFER) * canvasState.canvas.height) {
             // careful this could become an infinite loop very easily
-            setCanvasState((c) => {return {...c, transform: transformToFit(cropState, c.canvas)}})
+            setCanvasState((c) => {
+                if (!c.canvas) return c
+                return {...c, transform: transformToFit(cropState, c.canvas)}
+            })
         }
     }, [cropState, canvasState.transform, canvasState.canvas])
 
     const setPosition = useCallback((pos: Point, corner: Corner) => {
+        if (!canvasState.image) return
         if (!corners) return
         let opposite: Point
         let diagonal: 1 | -1
@@ -293,11 +326,13 @@ const Crop = ({renderer, ...props}: CropProps) => {
                 break
         }
 
-        setCropState((c) => fitPoint(canvasToImage(pos, canvasState.transform), canvasToImage(opposite, canvasState.transform), canvasState.image, props.aspect, c.angle, diagonal))
+        const tempImage = canvasState.image
+        setCropState((c) => fitPoint(canvasToImage(pos, canvasState.transform), canvasToImage(opposite, canvasState.transform), tempImage, props.aspect, c.angle, diagonal))
     }, [corners, canvasState.image, canvasState.transform, props.aspect, setCropState])
 
     const commitPosition = useCallback(() => {
         setCanvasState((c) => {
+            if (!c.canvas) return c
             return {...c, transform: transformToFit(cropState, c.canvas)}
         })
     }, [cropState])
@@ -310,21 +345,65 @@ const Crop = ({renderer, ...props}: CropProps) => {
         const thirds: ReactElement[] = []
         if (props.thirds) {
             for (let i = 1; i < 3; i++) {
-                thirds.push(<div key={"h-third-" + i} style={{position: 'absolute', top: `${i * 33}%`, left: 0, width: '100%', height: '0.75px', backgroundColor: 'white'}}></div>)
-                thirds.push(<div key={"v-third-" + i} style={{position: 'absolute', left: `${i * 33}%`, top: 0, height: '100%', width: '0.75px', backgroundColor:'white'}}></div>)
+                thirds.push(<div key={"h-third-" + i} style={{
+                    position: 'absolute',
+                    top: `${i * 33}%`,
+                    left: 0,
+                    width: '100%',
+                    height: '0.75px',
+                    backgroundColor: 'white'
+                }}></div>)
+                thirds.push(<div key={"v-third-" + i} style={{
+                    position: 'absolute',
+                    left: `${i * 33}%`,
+                    top: 0,
+                    height: '100%',
+                    width: '0.75px',
+                    backgroundColor: 'white'
+                }}></div>)
             }
         }
-        for (let {pos, corner} of [{pos: corners.a, corner: Corner.TL}, {pos: corners.b, corner: Corner.TR}, {pos: corners.c, corner: Corner.BR}, {pos: corners.d, corner: Corner.BL}]) {
-            handles.push(<Handle key={`${corner}`} position={cornerClamp(pos)} setPosition={setPosition} commitPosition={commitPosition} corner={corner}/>)
+        for (let {pos, corner} of [{pos: corners.a, corner: Corner.TL}, {
+            pos: corners.b,
+            corner: Corner.TR
+        }, {pos: corners.c, corner: Corner.BR}, {pos: corners.d, corner: Corner.BL}]) {
+            handles.push(<Handle key={`${corner}`} position={cornerClamp(pos)} setPosition={setPosition}
+                                 commitPosition={commitPosition} corner={corner}/>)
         }
-        handles.push(<div key={"matte"} style={{position: 'absolute', top: zeroIfNaN(corners.a.y), left: zeroIfNaN(corners.a.x), width: zeroIfNaN(corners.b.x - corners.a.x), height: zeroIfNaN(corners.d.y - corners.a.y), borderRadius: props.borderRadius ?? '50%', boxShadow: '0 0 0 999999px rgba(0, 0, 0, 0.7)'}}></div>)
-        handles.push(<div key={"border"} style={{position: 'absolute', top: zeroIfNaN(corners.a.y), left: zeroIfNaN(corners.a.x), width: zeroIfNaN(corners.b.x - corners.a.x), height: zeroIfNaN(corners.d.y - corners.a.y), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: '1px', borderColor: 'white'}}>
+        handles.push(<div key={"matte"} style={{
+            position: 'absolute',
+            top: zeroIfNaN(corners.a.y),
+            left: zeroIfNaN(corners.a.x),
+            width: zeroIfNaN(corners.b.x - corners.a.x),
+            height: zeroIfNaN(corners.d.y - corners.a.y),
+            borderRadius: props.borderRadius ?? '50%',
+            boxShadow: '0 0 0 999999px rgba(0, 0, 0, 0.7)'
+        }}></div>)
+        handles.push(<div key={"border"} className={"focus-outline"} style={{
+            position: 'absolute',
+            top: zeroIfNaN(corners.a.y),
+            left: zeroIfNaN(corners.a.x),
+            width: zeroIfNaN(corners.b.x - corners.a.x),
+            height: zeroIfNaN(corners.d.y - corners.a.y),
+            boxSizing: 'border-box',
+            borderStyle: 'solid',
+            borderWidth: '1px',
+            borderColor: 'white'
+        }}>
             {thirds}
         </div>)
     }
 
-    return (<div ref={wrapperRef}
-                 style={{height: "100%", width: "100%", position: "relative", cursor: 'move', ...props.wrapperStyle, overflow: 'hidden'}}>
+    return (<div ref={wrapperRef} role={"slider"} tabIndex={0}
+                 aria-label={`Handle for whole crop area; use arrow keys to move`}
+                 style={{
+                     height: "100%",
+                     width: "100%",
+                     position: "relative",
+                     cursor: 'move',
+                     outline: 'none', ...props.wrapperStyle,
+                     overflow: 'hidden'
+                 }}>
         <canvas ref={canvasRef} style={{height: "100%", width: "100%"}}></canvas>
         {handles}
 
