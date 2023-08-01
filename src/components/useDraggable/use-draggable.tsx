@@ -22,6 +22,8 @@ const dragSpeed = 100 // pixels per second
 const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressChange?: (pressed: boolean) => void): (elem: HTMLElement | null) => void => {
     // this state doesn't change often, so it's fine
     const [pressed, _setPressed] = useState(false);
+    const [mousePressed, setMousePressed] = useState(false)
+    const [keyPressed, setKeyPressed] = useState(false)
     const mouseOffset = useRef({x: 0, y: 0})
     const setPressed = (pressed: boolean | ((prevState: boolean) => boolean)) => {
         if (typeof pressed === 'function') {
@@ -106,6 +108,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
         }
 
         const handleMouseDown = (e: MouseEvent) => {
+            if (keyPressed) return
             // don't forget to disable text selection during drag and drop
             // operations
             if (e.target && e.target instanceof HTMLElement) {
@@ -114,11 +117,12 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
 
             mouseOffset.current = {x: e.offsetX, y: e.offsetY}
             setPressed(true);
+            setMousePressed(true)
             e.stopPropagation()
         };
 
         const handleKeyPress = (e: KeyboardEvent) => {
-            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown' || mousePressed) {
                 return
             }
             switch (e.key) {
@@ -141,8 +145,10 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                 }
                 return true
             })
+            setKeyPressed(true)
             e.stopPropagation()
         }
+
         elem.addEventListener("mousedown", handleMouseDown);
         elem.addEventListener("keydown", handleKeyPress)
         unsubscribe.current = () => {
@@ -210,9 +216,10 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
         // subscribe to mousemove and mouseup on document, otherwise you
         // can escape bounds of element while dragging and get stuck
         // dragging it forever
-        document.addEventListener("mousemove", handleMouseMove);
-        document.addEventListener("mouseup", handleMouseUp);
-        document.addEventListener('keyup', handleKeyUp)
+        if (mousePressed) {
+            document.addEventListener("mousemove", handleMouseMove);
+            document.addEventListener("mouseup", handleMouseUp);
+        } else if (keyPressed) document.addEventListener('keyup', handleKeyUp)
         return () => {
             keyMoveLoop.cancel()
             shouldRequest && cancelAnimationFrame(shouldRequest)

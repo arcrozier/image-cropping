@@ -327,7 +327,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         }
 
         const tempImage = canvasState.image
-        setCropState((c) => fitPoint(canvasToImage(pos, canvasState.transform), canvasToImage(opposite, canvasState.transform), tempImage, props.aspect, c.angle, diagonal))
+        setCropState((c) => fitCrop(fitPoint(canvasToImage(pos, canvasState.transform), canvasToImage(opposite, canvasState.transform), tempImage, props.aspect, c.angle, diagonal), tempImage, props.aspect, Transformations.TRANSLATE))
     }, [corners, canvasState.image, canvasState.transform, props.aspect, setCropState])
 
     const commitPosition = useCallback(() => {

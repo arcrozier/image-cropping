@@ -315,6 +315,8 @@ export function fitCrop(c: CropState, image: Dimension, aspect: number | undefin
                 else delta.dy = maxMagnitude(delta.dy, distance.dy)
             }
 
+            if (delta.dx === 0 && delta.dy === 0) return c
+
             // move the crop
             cPrime = {...c, x: c.x + delta.dx, y: c.y + delta.dy}
 
