@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import { StoryFn, Meta } from "@storybook/react";
 import Crop from "../components/Crop/Crop";
 // @ts-ignore
@@ -7,6 +7,7 @@ import landscape from "./assets/landscape.jpg"
 import portrait from "./assets/portrait.jpg"
 // @ts-ignore
 import square from "./assets/square.jpg"
+import {RangeControl} from "@storybook/blocks";
 
 // More on default export: https://storybook.js.org/docs/react/writing-stories/introduction#default-export
 export default {
@@ -15,7 +16,12 @@ export default {
 } as Meta<typeof Crop>;
 
 // More on component templates: https://storybook.js.org/docs/react/writing-stories/introduction#using-args
-const Template: StoryFn<typeof Crop> = (args) => <div style={{height: "500px", width: "900"}}><Crop {...args} /></div>;
+const Template: StoryFn<typeof Crop> = (args) => {
+    const [angle, setAngle] = useState(0)
+    return (
+        <div style={{height: "500px", width: "900"}}><Crop {...args} rotation={angle} /><input type={"range"} name={"angle"} onChange={(e) => setAngle(e.target.valueAsNumber)}></input></div>
+)
+}
 
 export const LandscapeFreeAspect = Template.bind({});
 // More on args: https://storybook.js.org/docs/react/writing-stories/args

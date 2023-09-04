@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState } from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
 // By https://stackoverflow.com/users/1872046/polkovnikov-ph
 // from https://stackoverflow.com/a/39192992/7484693
@@ -19,7 +19,10 @@ const dragSpeed = 100 // pixels per second
  *
  * @return  [ref, pressed]: ref should be passed to the element you want draggable. pressed is whether the user is currently dragging the element
  */
-const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressChange?: (pressed: boolean) => void): (elem: HTMLElement | null) => void => {
+const useDraggable = (onDrag: (delta: {
+    x: number,
+    y: number
+}) => void, onPressChange?: (pressed: boolean) => void): (elem: HTMLElement | null) => void => {
     // this state doesn't change often, so it's fine
     const [pressed, _setPressed] = useState(false);
     const [mousePressed, setMousePressed] = useState(false)
@@ -34,8 +37,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
                 }
                 return nextState
             }))
-        }
-        else {
+        } else {
             _setPressed(pressed)
             if (onPressChange) {
                 onPressChange(pressed)
@@ -90,7 +92,6 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
     // do not store position in useState! even if you useEffect on
     // it and update `transform` CSS property, React still rerenders
     // on every state change, and it LAGS
-    const cachedDelta = useRef({ x: 0, y: 0 });
     const ref = useRef<HTMLElement | null>(null);
 
     // a reference to a function to clean up listeners
@@ -122,7 +123,7 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
         };
 
         const handleKeyPress = (e: KeyboardEvent) => {
-            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown' || mousePressed) {
+            if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || mousePressed) {
                 return
             }
             switch (e.key) {
@@ -164,28 +165,15 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
             return;
         }
 
-        let shouldRequest: number | null = null
-
-        const updatePos = () => {
-            const temp = cachedDelta.current
-            cachedDelta.current = {x: 0, y: 0}
-            shouldRequest = null  // surprisingly, it works without this because whenever we call onDrag, it happens to change so
-            // the effect gets regenerated and shouldRequest gets initialized back to null but this is behavior that shouldn't be relied upon
-            // because it depends on undocumented client behavior
-            onDrag(temp)
-        }
-
         const handleMouseMove = (event: MouseEvent) => {
-            cachedDelta.current = {x: cachedDelta.current.x + event.movementX, y: cachedDelta.current.y + event.movementY}
-            if (!shouldRequest) {
-                shouldRequest = requestAnimationFrame(updatePos)
-            }
+            onDrag({x: event.movementX, y: event.movementY})
         };
         const handleMouseUp = (e: MouseEvent) => {
             if (e.target && e.target instanceof HTMLElement) {
                 e.target.style.userSelect = "auto";
             }
             setPressed(false);
+            setMousePressed(false)
             e.stopPropagation()
         };
 
@@ -209,8 +197,10 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
             }
             if (!(keys.current.up || keys.current.down || keys.current.left || keys.current.right)) {
                 setPressed(false)
+                setKeyPressed(false)
                 keyMoveLoop.cancel()
             }
+            e.preventDefault()
             e.stopPropagation()
         }
         // subscribe to mousemove and mouseup on document, otherwise you
@@ -222,7 +212,6 @@ const useDraggable = (onDrag: (delta: {x: number, y: number}) => void, onPressCh
         } else if (keyPressed) document.addEventListener('keyup', handleKeyUp)
         return () => {
             keyMoveLoop.cancel()
-            shouldRequest && cancelAnimationFrame(shouldRequest)
             document.removeEventListener("mousemove", handleMouseMove);
             document.removeEventListener("mouseup", handleMouseUp);
             document.removeEventListener('keyup', handleKeyUp)

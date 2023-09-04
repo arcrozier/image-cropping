@@ -82,6 +82,7 @@ const Handle = (props: HandleProps) => {
     const ref = useDraggable((delta) => {
         // this branch causes a new onDrag to be created each time the keyboard is updated
         // not great, but also not really a priority
+        console.log(delta)
         props.setPosition({x: props.position.x + delta.x, y: props.position.y + delta.y}, props.corner)
     }, (pressed) => {
         if (!pressed) {
@@ -171,7 +172,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
     const canvasRef = props.canvasRef ? props.canvasRef : useRef<HTMLCanvasElement | null>(null)
 
     const wrapperRef = useDraggable((delta) => {
-        // todo key presses somehow completely reset all state
+        // todo key presses somehow break everything
         setCropState((c) => {
             if (!canvasState.image) return c
             const screenPos = imageToCanvas(c, canvasState.transform)
@@ -220,6 +221,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         }
     }, [canvasRef.current])
 
+    // reset logic
     useEffect(() => {
         const img = new Image()
         setImage(null)
@@ -330,6 +332,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         setCropState((c) => fitCrop(fitPoint(canvasToImage(pos, canvasState.transform), canvasToImage(opposite, canvasState.transform), tempImage, props.aspect, c.angle, diagonal), tempImage, props.aspect, Transformations.TRANSLATE))
     }, [corners, canvasState.image, canvasState.transform, props.aspect, setCropState])
 
+    // when the mouse is released, we re-fit
     const commitPosition = useCallback(() => {
         setCanvasState((c) => {
             if (!c.canvas) return c
@@ -337,8 +340,22 @@ const Crop = ({renderer, ...props}: CropProps) => {
         })
     }, [cropState])
 
-    // todo on rotate call fit crop with scale
-    //      set crop state and update angle
+    // todo bad things happen
+    // handle rotation changing
+    useEffect(() => {
+            setCropState((crop) => {
+                if (!canvasState.image) return crop
+                const temp = fitCrop({...crop, angle: props.rotation ?? 0}, canvasState.image, props.aspect, Transformations.SCALE)
+                setCanvasState((canvas) => {
+                    if (!canvas.canvas) return canvas
+                return {
+                    ...canvas, transform: transformToFit(temp, canvas.canvas)
+                }
+            })
+                return temp
+        })
+
+    }, [props.rotation])
 
     const handles: ReactElement[] = []
     if (corners) {
