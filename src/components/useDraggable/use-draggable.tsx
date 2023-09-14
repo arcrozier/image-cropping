@@ -17,7 +17,8 @@ const dragSpeed = 100 // pixels per second
  * @param onPressChange Called when the state of pressed changes
  *                      element. Otherwise, positions provided to onDrag will be deltas
  *
- * @return  [ref, pressed]: ref should be passed to the element you want draggable. pressed is whether the user is currently dragging the element
+ * @return  ref ref should be passed to the element you want draggable. pressed is whether the
+ * user is currently dragging the element
  */
 const useDraggable = (onDrag: (delta: {
     x: number,
@@ -27,22 +28,13 @@ const useDraggable = (onDrag: (delta: {
     const [pressed, _setPressed] = useState(false);
     const [mousePressed, setMousePressed] = useState(false)
     const [keyPressed, setKeyPressed] = useState(false)
-    const mouseOffset = useRef({x: 0, y: 0})
-    const setPressed = (pressed: boolean | ((prevState: boolean) => boolean)) => {
-        if (typeof pressed === 'function') {
-            _setPressed((prevState => {
-                const nextState = pressed(prevState)
-                if (onPressChange) {
-                    onPressChange(nextState)
-                }
-                return nextState
-            }))
-        } else {
-            _setPressed(pressed)
-            if (onPressChange) {
+    const setPressed = (pressed: boolean) => {
+        _setPressed((prevState) => {
+            if (onPressChange && prevState !== pressed) {
                 onPressChange(pressed)
             }
-        }
+            return pressed
+        })
 
     }
     const keys = useRef({left: false, right: false, up: false, down: false})
@@ -116,7 +108,6 @@ const useDraggable = (onDrag: (delta: {
                 e.target.style.userSelect = "none";
             }
 
-            mouseOffset.current = {x: e.offsetX, y: e.offsetY}
             setPressed(true);
             setMousePressed(true)
             e.stopPropagation()
@@ -140,12 +131,10 @@ const useDraggable = (onDrag: (delta: {
                     keys.current.down = true
                     break
             }
-            setPressed((prevState) => {
-                if (!prevState) {
-                    keyMoveLoop()
-                }
-                return true
-            })
+            if (!pressed) {
+                keyMoveLoop()
+            }
+            setPressed(true)
             setKeyPressed(true)
             e.stopPropagation()
         }
@@ -154,8 +143,9 @@ const useDraggable = (onDrag: (delta: {
         elem.addEventListener("keydown", handleKeyPress)
         unsubscribe.current = () => {
             elem.removeEventListener("mousedown", handleMouseDown);
+            elem.removeEventListener("keydown", handleKeyPress);
         };
-    }, []);
+    }, [onDrag]);
 
     useEffect(() => {
         // why subscribe in a `useEffect`? because we want to subscribe
@@ -195,6 +185,7 @@ const useDraggable = (onDrag: (delta: {
                     keys.current.down = false
                     break
             }
+            onDrag({x: 1, y: 1})
             if (!(keys.current.up || keys.current.down || keys.current.left || keys.current.right)) {
                 setPressed(false)
                 setKeyPressed(false)

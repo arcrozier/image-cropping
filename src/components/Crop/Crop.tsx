@@ -22,8 +22,8 @@ import {
     transformToFit
 } from "./utils";
 import {clamp, identity, Point, zeroIfNaN} from "./mathExtension";
-import useDraggable from '../useDraggable';
 import './crop.css'
+import {useMove} from "react-aria";
 
 export interface CropProps {
     src: string,
@@ -79,13 +79,12 @@ export const HANDLE_SIZE = 48
 
 const Handle = (props: HandleProps) => {
 
-    const ref = useDraggable((delta) => {
-        // this branch causes a new onDrag to be created each time the keyboard is updated
-        // not great, but also not really a priority
-        console.log(delta)
-        props.setPosition({x: props.position.x + delta.x, y: props.position.y + delta.y}, props.corner)
-    }, (pressed) => {
-        if (!pressed) {
+    const {moveProps} = useMove({
+        onMove(e) {
+            props.setPosition({x: props.position.x + e.deltaX, y: props.position.y + e.deltaY}, props.corner)
+            console.log("Moved")
+        },
+        onMoveEnd() {
             props.commitPosition()
         }
     })
@@ -124,7 +123,7 @@ const Handle = (props: HandleProps) => {
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'visible'
-    }} ref={ref}>
+    }} >
 
             <div style={{
                 borderRadius: '50%', backgroundColor: 'white', width: `25%`, height: `25%`, zIndex: 3, display: 'flex',
@@ -132,7 +131,7 @@ const Handle = (props: HandleProps) => {
                 alignItems: 'center',
                 ...props.handleStyle
             }}>
-                <div className={'focus-grow'} role={'slider'} tabIndex={0}
+                <div {...moveProps} className={'focus-grow'} role={'slider'} tabIndex={0}
                      aria-label={`Handle for ${corner} corner of crop area`} style={{
                     zIndex: 3, borderRadius: "50%", overflow: "hidden",
                     outline: 'none', backgroundColor: 'rgba(255, 255, 255, 0.5)', flexShrink: 0
@@ -171,12 +170,11 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const canvasRef = props.canvasRef ? props.canvasRef : useRef<HTMLCanvasElement | null>(null)
 
-    const wrapperRef = useDraggable((delta) => {
-        // todo key presses somehow break everything
+    const {moveProps} = useMove({onMove(e) {
         setCropState((c) => {
             if (!canvasState.image) return c
             const screenPos = imageToCanvas(c, canvasState.transform)
-            const imagePos = canvasToImage({x: screenPos.x - delta.x, y: screenPos.y - delta.y}, canvasState.transform)
+            const imagePos = canvasToImage({x: screenPos.x - e.deltaX, y: screenPos.y - e.deltaY}, canvasState.transform)
             const temp = fitCrop({
                 ...c,
                 x: imagePos.x,
@@ -188,7 +186,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
             })
             return temp
         })
-    })
+    }})
 
     useEffect(() => {
         if (canvasRef.current && canvasState.canvas) {
@@ -411,7 +409,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         </div>)
     }
 
-    return (<div ref={wrapperRef} role={"slider"} tabIndex={0}
+    return (<div {...moveProps} role={"slider"} tabIndex={0}
                  aria-label={`Handle for whole crop area; use arrow keys to move`}
                  style={{
                      height: "100%",
