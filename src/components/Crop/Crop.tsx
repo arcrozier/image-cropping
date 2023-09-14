@@ -123,21 +123,21 @@ const Handle = (props: HandleProps) => {
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'visible'
-    }} >
+    }}>
 
-            <div style={{
-                borderRadius: '50%', backgroundColor: 'white', width: `25%`, height: `25%`, zIndex: 3, display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                ...props.handleStyle
+        <div style={{
+            borderRadius: '50%', backgroundColor: 'white', width: `25%`, height: `25%`, zIndex: 3, display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            ...props.handleStyle
+        }}>
+            <div {...moveProps} className={'focus-grow'} role={'slider'} tabIndex={0}
+                 aria-label={`Handle for ${corner} corner of crop area`} style={{
+                zIndex: 3, borderRadius: "50%", overflow: "hidden",
+                outline: 'none', backgroundColor: 'rgba(255, 255, 255, 0.5)', flexShrink: 0
             }}>
-                <div {...moveProps} className={'focus-grow'} role={'slider'} tabIndex={0}
-                     aria-label={`Handle for ${corner} corner of crop area`} style={{
-                    zIndex: 3, borderRadius: "50%", overflow: "hidden",
-                    outline: 'none', backgroundColor: 'rgba(255, 255, 255, 0.5)', flexShrink: 0
-                }}>
-                </div>
             </div>
+        </div>
 
     </div>)
 }
@@ -170,24 +170,31 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const canvasRef = props.canvasRef ? props.canvasRef : useRef<HTMLCanvasElement | null>(null)
 
-    const {moveProps} = useMove({onMove(e) {
-        setCropState((c) => {
-            if (!canvasState.image) return c
-            const screenPos = imageToCanvas(c, canvasState.transform)
-            const imagePos = canvasToImage({x: screenPos.x - e.deltaX, y: screenPos.y - e.deltaY}, canvasState.transform)
-            const temp = fitCrop({
-                ...c,
-                x: imagePos.x,
-                y: imagePos.y
-            }, canvasState.image, props.aspect, Transformations.TRANSLATE)
-            setCanvasState((c) => {
-                if (!c.canvas) return c
-                return {...c, transform: transformToFit(temp, c.canvas)}
+    // handle canvas dragged
+    const {moveProps} = useMove({
+        onMove(e) {
+            setCropState((c) => {
+                if (!canvasState.image) return c
+                const screenPos = imageToCanvas(c, canvasState.transform)
+                const imagePos = canvasToImage({
+                    x: screenPos.x - e.deltaX,
+                    y: screenPos.y - e.deltaY
+                }, canvasState.transform)
+                const temp = fitCrop({
+                    ...c,
+                    x: imagePos.x,
+                    y: imagePos.y
+                }, canvasState.image, props.aspect, Transformations.TRANSLATE)
+                setCanvasState((c) => {
+                    if (!c.canvas) return c
+                    return {...c, transform: transformToFit(temp, c.canvas)}
+                })
+                return temp
             })
-            return temp
-        })
-    }})
+        }
+    })
 
+    // draw image
     useEffect(() => {
         if (canvasRef.current && canvasState.canvas) {
             canvasRef.current.width = canvasState.canvas.width
@@ -204,6 +211,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         }
     }, [canvasRef.current, canvasState.transform, canvasState.canvas, image])
 
+    // listen for window size changes
     useEffect(() => {
         if (canvasRef.current) {
             const temp = canvasRef.current
@@ -341,16 +349,12 @@ const Crop = ({renderer, ...props}: CropProps) => {
     // todo bad things happen
     // handle rotation changing
     useEffect(() => {
-            setCropState((crop) => {
-                if (!canvasState.image) return crop
-                const temp = fitCrop({...crop, angle: props.rotation ?? 0}, canvasState.image, props.aspect, Transformations.SCALE)
-                setCanvasState((canvas) => {
-                    if (!canvas.canvas) return canvas
-                return {
-                    ...canvas, transform: transformToFit(temp, canvas.canvas)
-                }
-            })
-                return temp
+        setCropState((crop) => {
+            if (!canvasState.image) return crop
+            return fitCrop({
+                ...crop,
+                angle: props.rotation ?? 0
+            }, canvasState.image, props.aspect, Transformations.SCALE)
         })
 
     }, [props.rotation])
