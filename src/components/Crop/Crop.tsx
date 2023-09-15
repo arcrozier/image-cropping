@@ -243,6 +243,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         // @ts-ignore
     }, [props.src])
 
+    // uses an output parameter to return a function that renders the crop area to an image
     useEffect(() => {
         renderer.current = async () => {
             // todo in here, create a canvas the same size as the crop. Transform the canvas. Draw the image to the
@@ -251,6 +252,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         }
     }, [renderer])
 
+    // clamps the point to fit within the canvas
     const cornerClamp = (pos: Point) => {
         if (!canvasState.canvas) return pos
         const x = clamp(zeroIfNaN(pos.x), CROP_BUFFER * canvasState.canvas.width, (1 - CROP_BUFFER) * canvasState.canvas.width)
@@ -258,6 +260,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
         return {x: x, y: y}
     }
 
+    // when the user expands the crop area, this will rescale the canvas so the points don't leave it
     useEffect(() => {
         if (!canvasState.image || !canvasState.canvas) return
         const corners = getCanvasCorners(cropState, canvasState.transform)
@@ -346,15 +349,19 @@ const Crop = ({renderer, ...props}: CropProps) => {
         })
     }, [cropState])
 
-    // todo bad things happen
     // handle rotation changing
     useEffect(() => {
         setCropState((crop) => {
             if (!canvasState.image) return crop
-            return fitCrop({
+            const temp = fitCrop({
                 ...crop,
                 angle: props.rotation ?? 0
             }, canvasState.image, props.aspect, Transformations.SCALE)
+            setCanvasState((c) => {
+                if (!c.canvas) return c
+                return {...c, transform: transformToFit(temp, c.canvas)}
+            })
+            return temp
         })
 
     }, [props.rotation])

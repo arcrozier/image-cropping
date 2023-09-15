@@ -19,7 +19,7 @@ export default {
 const Template: StoryFn<typeof Crop> = (args) => {
     const [angle, setAngle] = useState(0)
     return (
-        <div style={{height: "500px", width: "900"}}><Crop {...args} rotation={angle} /><input type={"range"} name={"angle"} onChange={(e) => setAngle(e.target.valueAsNumber)}></input></div>
+        <div style={{height: "500px", width: "900"}}><Crop {...args} rotation={angle} /><input step={0.01} type={"range"} name={"angle"} onChange={(e) => setAngle(e.target.valueAsNumber)} value={angle} max={Math.PI} min={-Math.PI}></input>{angle}</div>
 )
 }
 

@@ -1,4 +1,4 @@
-import {clamp, identity, maxMagnitude, midpoint, Point, sign, signsMatch} from "./mathExtension";
+import {clamp, identity, maxMagnitude, midpoint, Point, radiansToDegrees, sign, signsMatch} from "./mathExtension";
 
 export const CROP_BUFFER = 0.05
 
@@ -50,7 +50,7 @@ function isWithin(p: Point, d: Dimension): boolean {
  *              rectangle in clockwise order
  */
 export function getCorners(crop: CropState): { a: Point, b: Point, c: Point, d: Point } {
-    const rot = identity.rotate(crop.angle).translate(crop.x, crop.y)
+    const rot = identity.translate(crop.x, crop.y).rotate(radiansToDegrees(crop.angle))
     const a = rot.transformPoint({x: -crop.width / 2, y: -crop.height / 2})
     const b = rot.transformPoint({x: crop.width / 2, y: -crop.height / 2})
     const c = rot.transformPoint({x: crop.width / 2, y: crop.height / 2})
@@ -83,7 +83,7 @@ export function getCanvasCorners(crop: CropState, transform: DOMMatrixReadOnly) 
  * @param angle The rotation of the coordinate space, in radians
  */
 export function getInverseCorner(p: Point, center: Point, angle: number): Point {
-    const t = identity.translate(-center.x, -center.y).rotate(-angle)
+    const t = identity.rotate(radiansToDegrees(-angle)).translate(-center.x, -center.y)
     return t.transformPoint(p)
 }
 
@@ -114,9 +114,9 @@ export function transformToFit(c: CropState, windowSize: Dimension): DOMMatrix {
     const centerY = windowSize.height / 2
     matrix
         .translateSelf(-c.x, -c.y)  // translate so that the center of the crop is at the origin
-        .rotateSelf(-c.angle) // rotate so crop angle is normalized
         .translateSelf(centerX, centerY)  // move the origin to the center of the screen
         .scaleSelf(scale, scale, 1, c.x, c.y) // scale so that c.width < windowSize.width and c.height < windowSize.height
+        .rotateSelf(radiansToDegrees(c.angle)) // rotate so crop angle is normalized
 
     return matrix;
 }
