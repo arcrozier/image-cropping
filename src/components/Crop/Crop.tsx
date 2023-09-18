@@ -21,7 +21,7 @@ import {
     Transformations,
     transformToFit
 } from "./utils";
-import {clamp, identity, Point, zeroIfNaN} from "./mathExtension";
+import {clamp, Point, zeroIfNaN} from "./mathExtension";
 import './crop.css'
 import {useMove} from "react-aria";
 
@@ -110,7 +110,8 @@ const Handle = (props: HandleProps) => {
     }
     const top = props.position.y - HANDLE_SIZE / 2
     const left = props.position.x - HANDLE_SIZE / 2
-    return (<div style={{
+    return (<div {...moveProps} role={'slider'} tabIndex={0}
+                 aria-label={`Handle for ${corner} corner of crop area`} style={{
         position: 'absolute',
         top: zeroIfNaN(top),
         left: zeroIfNaN(left),
@@ -118,6 +119,7 @@ const Handle = (props: HandleProps) => {
         width: `${HANDLE_SIZE}px`,
         cursor: cursor,
         zIndex: 2,
+        outline: 'none',
         borderRadius: '50%',
         display: 'flex',
         justifyContent: 'center',
@@ -131,10 +133,9 @@ const Handle = (props: HandleProps) => {
             alignItems: 'center',
             ...props.handleStyle
         }}>
-            <div {...moveProps} className={'focus-grow'} role={'slider'} tabIndex={0}
-                 aria-label={`Handle for ${corner} corner of crop area`} style={{
+            <div className={'focus-grow'} style={{
                 zIndex: 3, borderRadius: "50%", overflow: "hidden",
-                outline: 'none', backgroundColor: 'rgba(255, 255, 255, 0.5)', flexShrink: 0
+                backgroundColor: 'rgba(255, 255, 255, 0.5)', flexShrink: 0
             }}>
             </div>
         </div>
@@ -162,7 +163,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
 
     const [cropState, setCropState] = useState<CropState>(resetCrop({width: 0, height: 0}, props.aspect))
     const [canvasState, setCanvasState] = useState<CanvasState>({
-        transform: identity,
+        transform: new DOMMatrix(),
         image: undefined,
         canvas: undefined
     })
@@ -356,7 +357,7 @@ const Crop = ({renderer, ...props}: CropProps) => {
             const temp = fitCrop({
                 ...crop,
                 angle: props.rotation ?? 0
-            }, canvasState.image, props.aspect, Transformations.SCALE)
+            }, canvasState.image, props.aspect ?? crop.width / crop.height, Transformations.SCALE)
             setCanvasState((c) => {
                 if (!c.canvas) return c
                 return {...c, transform: transformToFit(temp, c.canvas)}

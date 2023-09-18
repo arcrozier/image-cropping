@@ -1,4 +1,4 @@
-import {clamp, identity, maxMagnitude, midpoint, Point, radiansToDegrees, sign, signsMatch} from "./mathExtension";
+import {clamp, maxMagnitude, midpoint, Point, radiansToDegrees, sign, signsMatch} from "./mathExtension";
 
 export const CROP_BUFFER = 0.05
 
@@ -50,7 +50,7 @@ function isWithin(p: Point, d: Dimension): boolean {
  *              rectangle in clockwise order
  */
 export function getCorners(crop: CropState): { a: Point, b: Point, c: Point, d: Point } {
-    const rot = identity.translate(crop.x, crop.y).rotate(radiansToDegrees(crop.angle))
+    const rot = new DOMMatrix().translate(crop.x, crop.y).rotate(radiansToDegrees(crop.angle))
     const a = rot.transformPoint({x: -crop.width / 2, y: -crop.height / 2})
     const b = rot.transformPoint({x: crop.width / 2, y: -crop.height / 2})
     const c = rot.transformPoint({x: crop.width / 2, y: crop.height / 2})
@@ -83,7 +83,7 @@ export function getCanvasCorners(crop: CropState, transform: DOMMatrixReadOnly) 
  * @param angle The rotation of the coordinate space, in radians
  */
 export function getInverseCorner(p: Point, center: Point, angle: number): Point {
-    const t = identity.rotate(radiansToDegrees(-angle)).translate(-center.x, -center.y)
+    const t = new DOMMatrix().rotate(radiansToDegrees(-angle)).translate(-center.x, -center.y)
     return t.transformPoint(p)
 }
 
@@ -112,13 +112,15 @@ export function transformToFit(c: CropState, windowSize: Dimension): DOMMatrix {
     const scale = Math.min(windowSize.width / c.width, windowSize.height / c.height) * (1 - CROP_BUFFER * 2 - 0.0001)  // scale down a little more to play it safe on the infinite loops
     const centerX = windowSize.width / 2
     const centerY = windowSize.height / 2
-    matrix
-        .translateSelf(-c.x, -c.y)  // translate so that the center of the crop is at the origin
-        .translateSelf(centerX, centerY)  // move the origin to the center of the screen
-        .scaleSelf(scale, scale, 1, c.x, c.y) // scale so that c.width < windowSize.width and c.height < windowSize.height
-        .rotateSelf(radiansToDegrees(c.angle)) // rotate so crop angle is normalized
-
-    return matrix;
+    const rotation = new DOMMatrix().rotate(radiansToDegrees(c.angle))
+    const correctionVector = rotation.transformPoint({x: centerX, y: centerY})
+    const scalePos = rotation.transformPoint({x: c.x, y: c.y})
+    return matrix
+        // .translate(c.x, c.y)  // translate so that the center of the crop is at the origin
+        .translate(-c.x, -c.y)  // translate so that the center of the crop is at the origin
+        .rotate(radiansToDegrees(-c.angle))
+        .translate(correctionVector.x, correctionVector.y)  // move the origin to the center of the screen
+        .scale(scale, scale, 1, scalePos.x, scalePos.y) // scale so that c.width < windowSize.width and c.height < windowSize.height
 }
 
 /**
@@ -196,7 +198,7 @@ export function fitPoint(p: Point, o: Point, image: Dimension, aspect: number | 
         // we will define a line that intersects o with the same slope as the aspect ratio after rotating
         // we define a vector that represents the aspect ratio and then rotate it by the angle
         // slope is a unit vector
-        const slope = identity.rotate(angle).transformPoint({x: aspect, y: diagonal})
+        const slope = new DOMMatrix().rotate(radiansToDegrees(angle)).transformPoint({x: aspect, y: diagonal})
         const t1x = -o.x / slope.x
         const t2x = (image.width - 1 - o.x) / slope.x
         const t1y = -o.y / slope.y

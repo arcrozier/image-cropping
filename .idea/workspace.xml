@@ -4,12 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9c3161ac-5810-4b2d-82f0-23c45f78f420" name="Changes" comment="added comments, deleted unnecessary files/code">
+    <list default="true" id="9c3161ac-5810-4b2d-82f0-23c45f78f420" name="Changes" comment="Made progress on rotation">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/Crop/Crop.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Crop/Crop.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Crop/crop.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Crop/crop.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/Crop/mathExtension.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Crop/mathExtension.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/components/Crop/utils.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Crop/utils.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/stories/Crop.stories.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/stories/Crop.stories.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,7 +64,8 @@
       <workItem from="1693613997139" duration="15000" />
       <workItem from="1693614016649" duration="6903000" />
       <workItem from="1694148543715" duration="6632000" />
-      <workItem from="1694740657347" duration="4007000" />
+      <workItem from="1694740657347" duration="4406000" />
+      <workItem from="1694803579472" duration="12647000" />
     </task>
     <task id="LOCAL−00001" summary="added comments, deleted unnecessary files/code">
       <option name="closed" value="true" />
@@ -73,7 +74,14 @@
       <option name="presentableId" value="LOCAL−00001" />
       <updated>1694722059332</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL−00002" summary="Made progress on rotation">
+      <option name="closed" value="true" />
+      <created>1694747408258</created>
+      <option name="number" value="LOCAL−00002" />
+      <option name="presentableId" value="LOCAL−00002" />
+      <updated>1694747408258</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -81,6 +89,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="added comments, deleted unnecessary files/code" />
-    <option name="LAST_COMMIT_MESSAGE" value="added comments, deleted unnecessary files/code" />
+    <MESSAGE value="Made progress on rotation" />
+    <option name="LAST_COMMIT_MESSAGE" value="Made progress on rotation" />
   </component>
 </project>

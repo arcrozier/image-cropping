@@ -8,12 +8,6 @@ export interface Point {
 
 
 /**
- * The 3x3 identity matrix
- */
-export const identity = new DOMMatrixReadOnly([1, 0, 0, 1, 0, 0])
-
-
-/**
  * Converts an angle in degrees to radians
  *
  * @param degrees   The angle in degrees
